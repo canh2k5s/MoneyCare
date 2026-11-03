@@ -1,0 +1,130 @@
+:root{--blue:#2563eb;--navy:#0f2a52;--teal:#14b8a6;--spent:#f97316;--save:#8b5cf6;--income:#10b981;--ink:#1e293b;--mute:#64748b;--bg:#f4f7fb}
+body{font-family:"Be Vietnam Pro",system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+.app{display:flex;min-height:100vh}
+.sidebar{width:250px;flex-shrink:0;position:sticky;top:0;height:100vh;padding:26px 16px;background:linear-gradient(180deg,#0f2a52,#1d4ed8);display:flex;flex-direction:column;gap:6px}
+.brand{color:#fff;font-weight:700;font-size:1.35rem;padding:0 12px 22px;display:flex;align-items:center;gap:10px;text-decoration:none}
+.brand i{background:linear-gradient(135deg,#34d399,#14b8a6);width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:1.1rem}
+.sidebar a.item{color:#c7d6f3;text-decoration:none;padding:11px 14px;border-radius:12px;display:flex;align-items:center;gap:12px;font-weight:500}
+/* Khi di chuột vào menu */
+.sidebar a.item:hover {
+    background: #fff;
+    color: var(--navy);
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+/* Menu của trang đang mở */
+.sidebar a.item.on {
+    background: #fff;
+    color: var(--navy);
+    font-weight: 600;
+}
+
+/* Hiệu ứng khi bấm */
+.sidebar a.item:active {
+    background: #fff;
+    color: var(--navy);
+}
+.content{flex:1;min-width:0;padding:32px 36px 60px}
+.page-title{font-weight:700;font-size:1.65rem;margin:0}
+.page-sub{color:var(--mute);margin-bottom:24px}
+.box {
+    background: #fff;
+    border: 0;
+    border-radius: 20px;
+    padding: 22px;
+    box-shadow: 0 4px 24px rgba(30,64,120,.07);
+    height: auto;
+    min-height: 0;
+}
+
+/* Các khung trong cùng một hàng vẫn có chiều cao bằng nhau */
+.row > [class*="col-"] > .box {
+    height: 100%;
+}
+.box h2{font-size:1.02rem;font-weight:700;margin-bottom:16px}
+.hero{border-radius:24px;padding:28px 30px;color:#fff;background:linear-gradient(120deg,#1d4ed8 0%,#2563eb 45%,#14b8a6 100%);box-shadow:0 12px 32px rgba(37,99,235,.28)}
+.hero .big{font-size:2.6rem;font-weight:700;line-height:1.1}
+.hero .chip{background:rgba(255,255,255,.17);border-radius:16px;padding:12px 16px;height:100%}
+.hero .chip small{opacity:.85;display:block}
+.hero .chip b{font-size:1.15rem}
+.ico{width:44px;height:44px;border-radius:13px;display:inline-grid;place-items:center;font-size:1.2rem;flex-shrink:0}
+.ico-sm{width:32px;height:32px;border-radius:10px;font-size:.95rem}
+.ico-food{background:#fff1e6;color:#f97316}.ico-home{background:#e6efff;color:#2563eb}
+.ico-bill{background:#fef6cc;color:#ca8a04}.ico-move{background:#dcfaf3;color:#0d9488}
+.ico-save{background:#f1ebff;color:#8b5cf6}.ico-in{background:#dcf7ea;color:#10b981}
+.progress{height:10px;border-radius:10px;background:#e8eef7}
+.progress-bar{border-radius:10px}
+.bar-ok{background:linear-gradient(90deg,#34d399,#10b981)}.bar-warn{background:linear-gradient(90deg,#fbbf24,#f59e0b)}
+.bar-bad{background:linear-gradient(90deg,#fb7185,#e11d48)}.bar-save{background:linear-gradient(90deg,#a78bfa,#8b5cf6)}
+.donut{width:190px;height:190px;border-radius:50%;margin:0 auto;display:grid;place-items:center;background:conic-gradient(var(--spent) 0 26.25%,var(--save) 26.25% 38.75%,var(--income) 38.75% 100%)}
+.donut div{width:128px;height:128px;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px}
+.form-control,.form-select{border-radius:12px;padding:10px 14px;border-color:#dbe4f0}
+.form-control:focus,.form-select:focus{border-color:var(--blue);box-shadow:0 0 0 .2rem rgba(37,99,235,.15)}
+.btn{border-radius:12px;font-weight:600;padding:10px 20px}
+.btn-spent{background:linear-gradient(135deg,#fb923c,#f97316);color:#fff;border:0}
+.btn-income{background:linear-gradient(135deg,#34d399,#10b981);color:#fff;border:0}
+.btn-main{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:0}
+.btn-spent:hover,.btn-income:hover,.btn-main:hover{color:#fff;filter:brightness(1.07)}
+.form-top{height:5px;border-radius:5px;margin:-22px -22px 18px;border-top-left-radius:20px;border-top-right-radius:20px}
+.table>:not(caption)>*>*{padding:14px 10px;border-color:#edf1f7}
+.table thead th{color:var(--mute);font-weight:600;font-size:.85rem;background:transparent}
+.badge-soft{border-radius:20px;padding:6px 12px;font-weight:600;font-size:.78rem}
+.soft-ok{background:#dcf7ea;color:#0b7a55}.soft-warn{background:#fef0c7;color:#935c00}.soft-bad{background:#fde2e4;color:#b4132d}.soft-save{background:#f1ebff;color:#6d44d6}
+@media(max-width:860px){.app{flex-direction:column}.sidebar{width:100%;height:auto;position:static;flex-direction:row;flex-wrap:wrap;padding:14px}
+.brand{padding:0 8px 0 0;width:100%}.sidebar a.item{padding:8px 12px;font-size:.9rem}.content{padding:22px 16px 50px}.hero .big{font-size:2rem}}
+.main-header {
+    background: #fff;
+    border-bottom: 1px solid #dee2e6;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+    padding: 12px 30px;
+}
+
+.main-header .navbar-brand {
+    font-size: 24px;
+}
+
+.main-header .btn {
+    border-radius: 10px;
+    padding: 9px 18px;
+}
+/* Bố cục toàn trang */
+html, body {
+    min-height: 100%;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Nội dung chính */
+.main-content {
+    flex: 1;
+}
+
+/* Footer */
+.main-footer {
+    background: #ffffff;
+    border-top: 1px solid #dee2e6;
+    padding: 25px 30px;
+    color: #64748b;
+    margin-top: 30px;
+}
+
+.footer-brand {
+    color: #2563eb;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.main-footer a {
+    color: #64748b;
+    text-decoration: none;
+}
+
+.main-footer a:hover {
+    color: #2563eb;
+}

@@ -1,0 +1,17 @@
+# File build
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# VS Code
+.vscode/
+
+# File cấu hình môi trường
+appsettings.Development.json
+
+# File tạm
+*.log

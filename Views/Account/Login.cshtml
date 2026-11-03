@@ -1,0 +1,60 @@
+@{
+    ViewData["Title"] = "Đăng nhập";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow border-0 rounded-4">
+                <div class="card-body p-4 p-md-5">
+
+                    <div class="text-center mb-4">
+                        <h2 class="fw-bold text-primary">MoneyCare</h2>
+                        <p class="text-muted">Đăng nhập để quản lý tài chính</p>
+                    </div>
+
+                    @if (ViewBag.Error != null)
+                    {
+                        <div class="alert alert-danger">
+                            @ViewBag.Error
+                        </div>
+                    }
+
+                    <form asp-controller="Account" asp-action="Login" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Tên đăng nhập hoặc Email</label>
+                            <input type="text" name="UserName"
+                                   class="form-control form-control-lg"
+                                   placeholder="Nhập tên đăng nhập hoặc email"
+                                   required />
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Mật khẩu</label>
+                            <input type="password" name="Password"
+                                   class="form-control form-control-lg"
+                                   placeholder="Nhập mật khẩu"
+                                   required />
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg w-100">
+                            Đăng nhập
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-4">
+                        Chưa có tài khoản?
+                        <a asp-controller="Account" asp-action="Register"
+                           class="text-primary fw-semibold text-decoration-none">
+                            Đăng ký ngay
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
