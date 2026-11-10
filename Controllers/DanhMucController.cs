@@ -36,53 +36,53 @@ namespace MoneyCare.Controllers
         }
 
         // Hiển thị danh sách danh mục
-      // Hiển thị danh sách danh mục, có lọc và tìm kiếm
-public async Task<IActionResult> Index(string loai = "TatCa", string? tuKhoa = null)
-{
-    int? uid = LayUserId();
+        // Hiển thị danh sách danh mục, có lọc và tìm kiếm
+        public async Task<IActionResult> Index(string loai = "TatCa", string? tuKhoa = null)
+        {
+            int? uid = LayUserId();
 
-    if (uid == null)
-        return Unauthorized("Vui lòng đăng nhập để quản lý danh mục.");
+            if (uid == null)
+                return Unauthorized("Vui lòng đăng nhập để quản lý danh mục.");
 
-    if (loai != "Thu" && loai != "Chi")
-        loai = "TatCa";
+            if (loai != "Thu" && loai != "Chi")
+                loai = "TatCa";
 
-    ViewBag.Loai = loai;
-    ViewBag.TuKhoa = tuKhoa;
+            ViewBag.Loai = loai;
+            ViewBag.TuKhoa = tuKhoa;
 
-    // Thống kê số lượng danh mục
-    ViewBag.SoChi = await _db.DanhMuc
-        .CountAsync(x => x.UserId == uid.Value && x.Loai == "Chi");
+            // Thống kê số lượng danh mục
+            ViewBag.SoChi = await _db.DanhMuc
+                .CountAsync(x => x.UserId == uid.Value && x.Loai == "Chi");
 
-    ViewBag.SoThu = await _db.DanhMuc
-        .CountAsync(x => x.UserId == uid.Value && x.Loai == "Thu");
+            ViewBag.SoThu = await _db.DanhMuc
+                .CountAsync(x => x.UserId == uid.Value && x.Loai == "Thu");
 
-    ViewBag.TongDanhMuc = ViewBag.SoChi + ViewBag.SoThu;
+            ViewBag.TongDanhMuc = ViewBag.SoChi + ViewBag.SoThu;
 
-    // Lấy danh mục của tài khoản đang đăng nhập
-    var query = _db.DanhMuc
-        .Where(x => x.UserId == uid.Value);
+            // Lấy danh mục của tài khoản đang đăng nhập
+            var query = _db.DanhMuc
+                .Where(x => x.UserId == uid.Value);
 
-    // Lọc theo loại
-    if (loai == "Thu" || loai == "Chi")
-    {
-        query = query.Where(x => x.Loai == loai);
-    }
+            // Lọc theo loại
+            if (loai == "Thu" || loai == "Chi")
+            {
+                query = query.Where(x => x.Loai == loai);
+            }
 
-    // Tìm kiếm theo tên
-    if (!string.IsNullOrWhiteSpace(tuKhoa))
-    {
-        string tuKhoaTrim = tuKhoa.Trim();
-        query = query.Where(x => x.Ten.Contains(tuKhoaTrim));
-    }
+            // Tìm kiếm theo tên
+            if (!string.IsNullOrWhiteSpace(tuKhoa))
+            {
+                string tuKhoaTrim = tuKhoa.Trim();
+                query = query.Where(x => x.Ten.Contains(tuKhoaTrim));
+            }
 
-    var danhSach = await query
-        .OrderBy(x => x.Loai)
-        .ThenBy(x => x.Ten)
-        .ToListAsync();
+            var danhSach = await query
+                .OrderBy(x => x.Loai)
+                .ThenBy(x => x.Ten)
+                .ToListAsync();
 
-    return View(danhSach);
-}
+            return View("~/Views/Home/DanhMuc.cshtml", danhSach);
+        }
 
         // Thêm hoặc sửa danh mục
         [HttpPost]
