@@ -1,3 +1,4 @@
+
 using Microsoft.EntityFrameworkCore;
 using MoneyCare.Models;
 
@@ -19,6 +20,9 @@ namespace MoneyCare.Data
 
         // Bảng danh mục
         public DbSet<DanhMuc> DanhMuc { get; set; } = null!;
+
+        // Bảng ngân sách
+        public DbSet<NganSach> NganSach { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -66,6 +70,11 @@ namespace MoneyCare.Data
                     d.UserId
                 })
                 .OnDelete(DeleteBehavior.NoAction);
+
+            // Bỏ liên kết User vì NganSach.UserId là string,
+            // trong khi NguoiDung.UserId là int
+            modelBuilder.Entity<NganSach>()
+                .Ignore(n => n.User);
         }
     }
 }
