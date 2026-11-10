@@ -12,19 +12,23 @@ namespace MoneyCare.Data
         {
         }
 
-        // Bảng người dùng - GIỮ NGUYÊN
+        // Bảng người dùng
         public DbSet<NguoiDung> NguoiDung { get; set; } = null!;
 
-        // Bảng giao dịch - THÊM MỚI
+        // Bảng giao dịch
         public DbSet<GiaoDich> GiaoDich { get; set; } = null!;
 
-        // Bảng danh mục - THÊM MỚI
+        // Bảng danh mục
         public DbSet<DanhMuc> DanhMuc { get; set; } = null!;
 
-        protected override void OnModelCreating(
-            ModelBuilder modelBuilder)
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // Cấu hình bảng DanhMuc
+            modelBuilder.Entity<DanhMuc>()
+                .ToTable("DanhMuc", table =>
+                    table.UseSqlOutputClause(false));
 
             // Khóa kết hợp để liên kết danh mục và người dùng
             modelBuilder.Entity<DanhMuc>()

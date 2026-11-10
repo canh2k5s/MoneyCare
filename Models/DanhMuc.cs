@@ -1,23 +1,30 @@
+
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MoneyCare.Models
 {
-    // Danh muc thu/chi thuoc mot tai khoan cu the
     [Table("DanhMuc")]
     public class DanhMuc
     {
-        [Key]
-        public int MaDanhMuc { get; set; }
+        [Key, Column("MaDanhMuc")]
+        public int Id { get; set; }
 
         public int UserId { get; set; }
 
-        [Required, StringLength(100)]
-        public string TenDanhMuc { get; set; } = string.Empty;
+        [Required, StringLength(50), Column("TenDanhMuc")]
+        public string Ten { get; set; } = "";
 
-        [Required, StringLength(3)]
-        public string Loai { get; set; } = string.Empty; // "Thu" hoac "Chi"
+        [Required, StringLength(10)]
+        public string Loai { get; set; } = "Chi";   // "Chi" hoặc "Thu"
 
+        [StringLength(50)]
+        public string? Icon { get; set; }
+
+        [StringLength(10)]
+        public string? Mau { get; set; }
+
+        // Liên kết với người dùng
         public NguoiDung? NguoiDung { get; set; }
     }
 }
