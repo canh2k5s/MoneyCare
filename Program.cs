@@ -11,6 +11,7 @@ builder.Services.AddDbContext<MoneyCareContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Đăng ký Session
+builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession();
 
 var app = builder.Build();
