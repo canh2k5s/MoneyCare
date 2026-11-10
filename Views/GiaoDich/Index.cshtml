@@ -1,0 +1,176 @@
+@model MoneyCare.Models.GiaoDichPageViewModel
+@{
+    ViewData["Title"] = "Thu chi";
+}
+
+<div class="app">
+    <aside class="sidebar">
+        <a class="brand" asp-controller="Home" asp-action="Index">
+            <i class="bi bi-wallet2"></i> MoneyCare
+        </a>
+        <a class="item" asp-controller="Home" asp-action="Index">
+            <i class="bi bi-grid-1x2-fill"></i> Tổng quan
+        </a>
+        <a class="item on" asp-controller="GiaoDich" asp-action="Index">
+            <i class="bi bi-arrow-left-right"></i> Thu chi
+        </a>
+        <a class="item" asp-controller="Home" asp-action="NganSach">
+            <i class="bi bi-pie-chart-fill"></i> Ngân sách
+        </a>
+        <a class="item" asp-controller="Home" asp-action="TietKiem">
+            <i class="bi bi-piggy-bank-fill"></i> Tiết kiệm
+        </a>
+    </aside>
+
+    <main class="content">
+        <h1 class="page-title">Quản lý giao dịch</h1>
+        <p class="page-sub">Ghi nhận các khoản thu và chi cá nhân.</p>
+
+        @if (TempData["ThongBao"] is not null)
+        {
+            <div class="alert alert-success" role="alert">@TempData["ThongBao"]</div>
+        }
+
+        <div class="box mb-4">
+            <div class="form-top" style="background:linear-gradient(90deg,#2563eb,#14b8a6)"></div>
+            <h2><i class="bi bi-plus-circle-fill text-primary me-2"></i>Thêm giao dịch mới</h2>
+
+            @if (Model.DanhMuc.Count == 0)
+            {
+                <div class="alert alert-warning">Tài khoản chưa có danh mục Thu/Chi.</div>
+            }
+
+            <form asp-controller="GiaoDich" asp-action="Them" method="post">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="Form.Loai" class="form-label">Loại giao dịch</label>
+                        <select asp-for="Form.Loai" id="loaiGiaoDich" class="form-select">
+                            <option value="Chi">Chi</option>
+                            <option value="Thu">Thu</option>
+                        </select>
+                        <span asp-validation-for="Form.Loai" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Form.MaDanhMuc" class="form-label">Danh mục</label>
+                        <select asp-for="Form.MaDanhMuc" id="maDanhMuc" class="form-select">
+                            <option value="0">-- Chọn danh mục --</option>
+                            @foreach (var dm in Model.DanhMuc)
+                            {
+                                <option value="@dm.MaDanhMuc" data-loai="@dm.Loai">@dm.TenDanhMuc</option>
+                            }
+                        </select>
+                        <span asp-validation-for="Form.MaDanhMuc" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Form.SoTien" class="form-label">Số tiền (VNĐ)</label>
+                        <input asp-for="Form.SoTien" type="number" min="0.01" step="0.01"
+                               class="form-control" placeholder="Ví dụ: 150000" required />
+                        <span asp-validation-for="Form.SoTien" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Form.NgayGiaoDich" class="form-label">Ngày giao dịch</label>
+                        <input asp-for="Form.NgayGiaoDich" type="date" class="form-control" required />
+                        <span asp-validation-for="Form.NgayGiaoDich" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="Form.GhiChu" class="form-label">Ghi chú (tùy chọn)</label>
+                        <textarea asp-for="Form.GhiChu" rows="3" maxlength="500"
+                                  class="form-control" placeholder="Nhập nội dung giao dịch..."></textarea>
+                        <span asp-validation-for="Form.GhiChu" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-main mt-4" disabled="@(Model.DanhMuc.Count == 0)">
+                    <i class="bi bi-check-circle me-1"></i>Lưu giao dịch
+                </button>
+            </form>
+        </div>
+
+        <div class="box">
+            <h2><i class="bi bi-clock-history me-2"></i>Lịch sử giao dịch của bạn</h2>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Ngày</th>
+                            <th>Loại</th>
+                            <th>Danh mục</th>
+                            <th>Ghi chú</th>
+                            <th class="text-end">Số tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.DanhSach.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center text-secondary py-4">
+                                    Chưa có giao dịch nào được lưu.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var item in Model.DanhSach)
+                            {
+                                var loai = item.DanhMuc?.Loai ?? "";
+                                <tr>
+                                    <td class="text-secondary">@item.NgayGiaoDich.ToString("dd/MM/yyyy")</td>
+                                    <td>
+                                        @if (loai == "Thu")
+                                        {
+                                            <span class="badge-soft soft-ok">Thu</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge-soft soft-warn">Chi</span>
+                                        }
+                                    </td>
+                                    <td>@item.DanhMuc?.TenDanhMuc</td>
+                                    <td>@item.GhiChu</td>
+                                    <td class="text-end fw-bold @(loai == "Thu" ? "text-success" : "text-danger")">
+                                        @(loai == "Thu" ? "+" : "−")@item.SoTien.ToString("N0")đ
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+@section Scripts {
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            const loai = document.getElementById("loaiGiaoDich");
+            const danhMuc = document.getElementById("maDanhMuc");
+            if (!loai || !danhMuc) return;
+
+            // Danh muc duoc lay tu SQL Server, chi loc tren giao dien
+            const danhSach = Array.from(danhMuc.querySelectorAll("option[data-loai]"))
+                .map(o => ({ value: o.value, text: o.textContent.trim(), loai: o.dataset.loai }));
+
+            function capNhatDanhMuc(giuChonCu) {
+                const giaTriCu = giuChonCu ? danhMuc.value : "0";
+                danhMuc.replaceChildren(new Option("-- Chọn danh mục --", "0"));
+                danhSach.filter(d => d.loai === loai.value).forEach(d =>
+                    danhMuc.add(new Option(d.text, d.value)));
+                if (Array.from(danhMuc.options).some(o => o.value === giaTriCu))
+                    danhMuc.value = giaTriCu;
+            }
+
+            loai.addEventListener("change", function () { capNhatDanhMuc(false); });
+            capNhatDanhMuc(true);
+        })();
+    </script>
+}

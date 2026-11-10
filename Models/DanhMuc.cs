@@ -1,4 +1,5 @@
- using System.ComponentModel.DataAnnotations;
+
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MoneyCare.Models
@@ -22,5 +23,8 @@ namespace MoneyCare.Models
 
         [StringLength(10)]
         public string? Mau { get; set; }
+
+        // Liên kết với người dùng
+        public NguoiDung? NguoiDung { get; set; }
     }
 }
