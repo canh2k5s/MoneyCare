@@ -60,7 +60,7 @@
                             <option value="0">-- Chọn danh mục --</option>
                             @foreach (var dm in Model.DanhMuc)
                             {
-                                <option value="@dm.MaDanhMuc" data-loai="@dm.Loai">@dm.TenDanhMuc</option>
+                                <option value="@dm.Id" data-loai="@dm.Loai">@dm.Ten</option>
                             }
                         </select>
                         <span asp-validation-for="Form.MaDanhMuc" class="text-danger small"></span>
@@ -132,7 +132,7 @@
                                             <span class="badge-soft soft-warn">Chi</span>
                                         }
                                     </td>
-                                    <td>@item.DanhMuc?.TenDanhMuc</td>
+                                    <td>@item.DanhMuc?.Ten</td>
                                     <td>@item.GhiChu</td>
                                     <td class="text-end fw-bold @(loai == "Thu" ? "text-success" : "text-danger")">
                                         @(loai == "Thu" ? "+" : "−")@item.SoTien.ToString("N0")đ

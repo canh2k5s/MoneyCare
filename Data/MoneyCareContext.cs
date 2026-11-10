@@ -1,4 +1,3 @@
-
 using Microsoft.EntityFrameworkCore;
 using MoneyCare.Models;
 
@@ -34,7 +33,7 @@ namespace MoneyCare.Data
             modelBuilder.Entity<DanhMuc>()
                 .HasAlternateKey(d => new
                 {
-                    d.MaDanhMuc,
+                    d.Id,
                     d.UserId
                 });
 
@@ -63,7 +62,7 @@ namespace MoneyCare.Data
                 })
                 .HasPrincipalKey(d => new
                 {
-                    d.MaDanhMuc,
+                    d.Id,
                     d.UserId
                 })
                 .OnDelete(DeleteBehavior.NoAction);

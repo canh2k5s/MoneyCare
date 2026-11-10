@@ -65,7 +65,7 @@ namespace MoneyCare.Controllers
 
             // Kiem tra danh muc thuoc dung tai khoan va dung loai Thu/Chi.
             bool danhMucHopLe = await _context.DanhMuc.AnyAsync(d =>
-                d.MaDanhMuc == model.Form.MaDanhMuc &&
+                d.Id == model.Form.MaDanhMuc &&
                 d.UserId == userId.Value &&
                 d.Loai == model.Form.Loai);
 
@@ -103,7 +103,7 @@ namespace MoneyCare.Controllers
                 .AsNoTracking()
                 .Where(d => d.UserId == userId)
                 .OrderBy(d => d.Loai)
-                .ThenBy(d => d.TenDanhMuc)
+                .ThenBy(d => d.Ten)
                 .ToListAsync();
 
             model.DanhSach = await _context.GiaoDich
