@@ -4,27 +4,29 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MoneyCare.Models
 {
-    [Table("DanhMuc")]
-    public class DanhMuc
+    public class NganSach
     {
-        [Key, Column("MaDanhMuc")]
-        public int Id { get; set; }
+        [Key]
+        public int MaNganSach { get; set; }
 
         public int UserId { get; set; }
 
-        [Required, StringLength(50), Column("TenDanhMuc")]
-        public string Ten { get; set; } = "";
+        public NguoiDung? User { get; set; }
 
-        [Required, StringLength(10)]
-        public string Loai { get; set; } = "Chi";   // "Chi" hoặc "Thu"
+        [Required(ErrorMessage = "Vui lòng chọn danh mục")]
+        public int MaDanhMuc { get; set; }
 
-        [StringLength(50)]
-        public string? Icon { get; set; }
+        public DanhMuc? DanhMuc { get; set; }
 
-        [StringLength(10)]
-        public string? Mau { get; set; }
+        [Range(1, 12, ErrorMessage = "Tháng phải từ 1 đến 12")]
+        public byte Thang { get; set; }
 
-        // Liên kết với người dùng
-        public NguoiDung? NguoiDung { get; set; }
+        [Range(2000, 2100, ErrorMessage = "Năm không hợp lệ")]
+        public short Nam { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        [Range(typeof(decimal), "0.01", "9999999999999999",
+            ErrorMessage = "Hạn mức phải lớn hơn 0")]
+        public decimal HanMuc { get; set; }
     }
 }

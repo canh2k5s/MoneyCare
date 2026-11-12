@@ -4,17 +4,14 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MoneyCare.Models
 {
-    // Anh xa den dbo.GiaoDich trong file SQLQuery1.sql
     [Table("GiaoDich")]
     public class GiaoDich
     {
         [Key]
         public int MaGiaoDich { get; set; }
 
-        // Nguoi dung so huu giao dich; duoc lay tu Session khi luu
         public int UserId { get; set; }
 
-        // Khoa ngoai den dbo.DanhMuc
         public int MaDanhMuc { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]

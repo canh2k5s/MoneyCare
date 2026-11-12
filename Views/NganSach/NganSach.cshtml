@@ -1,0 +1,125 @@
+@model IEnumerable<MoneyCare.Models.NganSachTheoDoiViewModel>
+
+@{
+    ViewData["Title"] = "Quản lý Ngân sách";
+    byte currentMonth = ViewBag.Thang ?? (byte)DateTime.Now.Month;
+    short currentYear = ViewBag.Nam ?? (short)DateTime.Now.Year;
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Quản lý Ngân sách Chi tiêu</h1>
+    
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Form Lọc Theo Tháng / Năm -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <form method="get" asp-action="Index" class="row g-3 align-items-center">
+                <div class="col-auto">
+                    <label class="col-form-label fw-bold">Chọn Tháng:</label>
+                </div>
+                <div class="col-auto">
+                    <select name="thang" class="form-select">
+                        @for (int i = 1; i <= 12; i++)
+                        {
+                            <option value="@i" selected="@(i == currentMonth)">Tháng @i</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <label class="col-form-label fw-bold">Năm:</label>
+                </div>
+                <div class="col-auto">
+                    <input type="number" name="nam" value="@currentYear" class="form-control" style="width: 100px;" />
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Xem Ngân Sách</button>
+                    <a asp-action="Create" class="btn btn-success"><i class="fas fa-plus"></i> Thiết lập ngân sách mới</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bảng danh sách ngân sách -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <i class="fas fa-wallet me-1"></i> Danh sách ngân sách tháng @currentMonth/@currentYear
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle">
+                    <thead class="table-light text-center">
+                        <tr>
+                            <th>Danh Mục</th>
+                            <th>Hạn Mức</th>
+                            <th>Đã Chi</th>
+                            <th>Còn Lại</th>
+                            <th>Tiến Độ (%)</th>
+                            <th>Cảnh Báo</th>
+                            <th>Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            foreach (var item in Model)
+                            {
+                                string progressColor = "bg-success";
+                                if (item.CanhBao == "SapVuot") progressColor = "bg-warning";
+                                if (item.CanhBao == "VuotHanMuc") progressColor = "bg-danger";
+
+                                <tr>
+                                    <td class="fw-bold">@item.TenDanhMuc</td>
+                                    <td class="text-end">@item.HanMuc.ToString("N0") đ</td>
+                                    <td class="text-end text-danger">@item.DaChi.ToString("N0") đ</td>
+                                    <td class="text-end text-success">@item.ConLai.ToString("N0") đ</td>
+                                    <td style="width: 200px;">
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar @progressColor" role="progressbar" 
+                                                 style="width: @(item.PhanTramDaDung > 100 ? 100 : item.PhanTramDaDung)%;" 
+                                                 aria-valuenow="@item.PhanTramDaDung" aria-valuemin="0" aria-valuemax="100">
+                                                @item.PhanTramDaDung.ToString("0.##")%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        @if (item.CanhBao == "VuotHanMuc")
+                                        {
+                                            <span class="badge bg-danger">Vượt hạn mức!</span>
+                                        }
+                                        else if (item.CanhBao == "SapVuot")
+                                        {
+                                            <span class="badge bg-warning text-dark">Sắp vượt (>=80%)</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success">Bình thường</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        <a asp-action="Edit" asp-route-id="@item.MaNganSach" class="btn btn-sm btn-warning" title="Sửa"><i class="fas fa-edit"></i></a>
+                                        <form asp-action="Delete" asp-route-id="@item.MaNganSach" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa ngân sách này không?');">
+                                            <button type="submit" class="btn btn-sm btn-danger" title="Xóa"><i class="fas fa-trash"></i></button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">Chưa có ngân sách nào được thiết lập cho tháng này.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
