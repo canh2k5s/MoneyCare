@@ -15,6 +15,8 @@ namespace MoneyCare.Data
 
         public DbSet<DanhMuc> DanhMuc { get; set; }
 
+        public DbSet<TietKiem> TietKiem { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
 {
     base.OnModelCreating(modelBuilder);
