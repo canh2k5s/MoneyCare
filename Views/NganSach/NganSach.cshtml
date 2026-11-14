@@ -1,74 +1,261 @@
 @model IEnumerable<MoneyCare.Models.NganSachTheoDoiViewModel>
 
 @{
+    Layout = null;
     ViewData["Title"] = "Quản lý Ngân sách";
     byte currentMonth = ViewBag.Thang ?? (byte)DateTime.Now.Month;
     short currentYear = ViewBag.Nam ?? (short)DateTime.Now.Year;
+
+    decimal tongHanMuc = Model != null && Model.Any() ? Model.Sum(x => x.HanMuc) : 0;
+    decimal tongDaChi = Model != null && Model.Any() ? Model.Sum(x => x.DaChi) : 0;
+    decimal tongConLai = Model != null && Model.Any() ? Model.Sum(x => x.ConLai) : 0;
 }
 
-<div class="container-fluid px-4">
-    <h1 class="mt-4">Quản lý Ngân sách Chi tiêu</h1>
-    
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            @TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quản lý Ngân sách - MoneyCare</title>
 
-    <!-- Form Lọc Theo Tháng / Năm -->
-    <div class="card mb-4 shadow-sm">
-        <div class="card-body">
-            <form method="get" asp-action="Index" class="row g-3 align-items-center">
-                <div class="col-auto">
-                    <label class="col-form-label fw-bold">Chọn Tháng:</label>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: "Segoe UI", Arial, sans-serif; background: #f4f7fc; color: #172554; display: flex; flex-direction: column; min-height: 100vh; }
+        .app { display: flex; flex: 1; }
+
+        /* --- HEADER --- */
+        .top-header { display: flex; justify-content: space-between; align-items: center; height: 70px; padding: 0 32px; background: white; border-bottom: 1px solid #e2e8f0; flex-shrink: 0; }
+        .brand-top { font-size: 24px; font-weight: 750; color: #2563eb; text-decoration: none; display: flex; align-items: center; gap: 10px; }
+        .user-menu { display: flex; align-items: center; gap: 15px; }
+        .user-name { color: #334155; font-weight: 600; font-size: 15px; }
+        .user-name i { color: #2563eb; margin-right: 5px; font-size: 18px; }
+        
+        .btn-logout { border: 1px solid #2563eb; color: #2563eb; background: transparent; padding: 8px 16px; border-radius: 8px; font-weight: 650; font-size: 14px; text-decoration: none; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+        .btn-logout:hover { background: #2563eb; color: white; }
+        
+        .btn-register { border: 1px solid #2563eb; background: #2563eb; color: white; padding: 8px 16px; border-radius: 8px; font-weight: 650; font-size: 14px; text-decoration: none; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+        .btn-register:hover { background: #1d4ed8; border-color: #1d4ed8; color: white; }
+
+        /* --- FOOTER --- */
+        .app-footer { background: white; padding: 24px 36px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; flex-shrink: 0; }
+        .footer-left { display: flex; flex-direction: column; gap: 8px; }
+        .footer-brand { font-size: 22px; font-weight: 750; color: #2563eb; text-decoration: none; display: flex; align-items: center; gap: 10px; }
+        .footer-desc { margin: 0; color: #64748b; font-size: 14px; }
+        .footer-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+        .footer-links { display: flex; gap: 12px; font-size: 14px; color: #cbd5e1; }
+        .footer-links a { color: #64748b; text-decoration: none; transition: 0.2s; }
+        .footer-links a:hover { color: #2563eb; }
+        .footer-copy { color: #94a3b8; font-size: 13px; }
+
+        /* Sidebar */
+        .sidebar { width: 250px; flex-shrink: 0; padding: 25px 16px; background: linear-gradient(180deg, #172f59, #1e40af); color: white; }
+        .brand { display: flex; align-items: center; gap: 12px; margin: 0 0 38px; padding: 0 8px; color: white; text-decoration: none; font-size: 22px; font-weight: 750; }
+        .brand-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; background: #10b981; font-size: 20px; }
+        .nav a { display: flex; align-items: center; gap: 14px; padding: 13px 14px; margin-bottom: 7px; border-radius: 10px; color: #dbeafe; text-decoration: none; font-size: 15px; transition: .2s; }
+        .nav a i { width: 21px; text-align: center; font-size: 17px; }
+        .nav a:hover, .nav a.active { background: #3565c5; color: white; }
+        .nav a.active { box-shadow: inset 4px 0 #fbbf24; }
+
+        /* Nội dung chính */
+        .main { flex: 1; min-width: 0; padding: 32px 36px; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 25px; }
+        .page-title { display: flex; align-items: center; gap: 15px; }
+        .page-title-icon { width: 54px; height: 54px; display: grid; place-items: center; border-radius: 14px; background: #dbeafe; color: #2563eb; font-size: 27px; }
+        .page-title h1 { margin: 0; font-size: 27px; font-weight: 750; color: #172554; }
+        .page-title p { margin: 5px 0 0; color: #64748b; font-size: 14px; }
+
+        .btn { border: 0; border-radius: 10px; padding: 11px 17px; font-family: inherit; font-size: 14px; font-weight: 650; cursor: pointer; transition: .2s; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-primary { background: #2563eb; color: white; }
+        .btn-primary:hover { background: #1d4ed8; color: white; }
+
+        /* Ba ô thống kê */
+        .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-card { display: flex; align-items: center; gap: 16px; min-height: 105px; padding: 18px; border: 1px solid #e2e8f0; border-radius: 15px; }
+        .stat-card.total { background: #e8efff; } .stat-card.income { background: #e5f8ed; } .stat-card.expense { background: #fff0e7; }
+        .stat-icon { width: 54px; height: 54px; flex-shrink: 0; display: grid; place-items: center; border-radius: 50%; background: rgba(255,255,255,.75); font-size: 23px; }
+        .total .stat-icon, .total .stat-number { color: #2563eb; }
+        .income .stat-icon, .income .stat-number { color: #16a34a; }
+        .expense .stat-icon, .expense .stat-number { color: #ea580c; }
+        .stat-label { color: #334155; font-size: 14px; font-weight: 600; }
+        .stat-number { margin-top: 3px; font-size: 24px; line-height: 1.1; font-weight: 750; }
+
+        /* Thanh công cụ (Lọc tháng/năm) */
+        .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap; margin-bottom: 16px; }
+        .filter-form { display: flex; align-items: center; gap: 10px; background: white; padding: 10px 15px; border-radius: 10px; border: 1px solid #e2e8f0; }
+        .filter-form label { font-weight: 600; color: #475569; font-size: 14px; }
+        .filter-form select, .filter-form input { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; font-family: inherit; font-size: 14px; }
+        .filter-form select:focus, .filter-form input:focus { border-color: #2563eb; }
+
+        /* Bảng dữ liệu */
+        .table-wrap { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 15px; background: white; box-shadow: 0 3px 12px rgba(15, 23, 42, .04); }
+        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        thead { background: #edf2ff; }
+        th { padding: 15px 18px; color: #475569; text-align: left; font-size: 12px; font-weight: 750; text-transform: uppercase; }
+        td { padding: 15px 18px; border-top: 1px solid #edf0f5; font-size: 14px; vertical-align: middle; }
+        tbody tr:hover { background: #f8faff; }
+
+        .fw-bold { font-weight: 650; color: #1e293b; }
+        .text-end { text-align: right; }
+        .text-center { text-align: center; }
+
+        /* Cảnh báo & Nhãn */
+        .type-badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 650; }
+        .badge-danger { background: #fee2e2; color: #dc2626; }
+        .badge-warning { background: #fef3c7; color: #d97706; }
+        .badge-success { background: #dcfce7; color: #15803d; }
+
+        /* Nút thao tác */
+        .actions { display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .action-btn { width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: 8px; cursor: pointer; font-size: 14px; text-decoration: none; }
+        .edit-btn { background: #dbeafe; color: #2563eb; }
+        .delete-btn { background: #fee2e2; color: #dc2626; }
+        .action-btn:hover { filter: brightness(.95); }
+
+        /* Progress Bar tuỳ chỉnh */
+        .progress { height: 12px; background-color: #e2e8f0; border-radius: 10px; overflow: hidden; margin-top: 5px;}
+        .progress-bar { border-radius: 10px; }
+
+        .empty { padding: 45px 20px; color: #64748b; text-align: center; }
+        .empty i { margin-bottom: 12px; color: #94a3b8; font-size: 38px; }
+
+        @@media (max-width: 900px) {
+            .sidebar { width: 210px; }
+            .main { padding: 24px 20px; }
+            .stats { gap: 10px; }
+        }
+        @@media (max-width: 650px) {
+            .sidebar { width: 75px; padding: 20px 9px; }
+            .brand { justify-content: center; padding: 0; }
+            .brand-text, .nav a span { display: none; }
+            .nav a { justify-content: center; padding: 13px 5px; }
+            .main { padding: 18px 12px; }
+            .stats { grid-template-columns: 1fr; }
+            .page-title h1 { font-size: 21px; }
+            .top-header { padding: 0 15px; }
+            .user-name { display: none; }
+            .app-footer { flex-direction: column; align-items: flex-start; padding: 20px 15px; }
+            .footer-right { align-items: flex-start; }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- HEADER -->
+    <header class="top-header">
+        <a class="brand-top" asp-controller="Home" asp-action="Index">
+            <i class="fa-solid fa-wallet"></i> MoneyCare
+        </a>
+        <div class="user-menu">
+            @if (Context.Session.GetInt32("UserId") != null)
+            {
+                <span class="user-name"><i class="fa-solid fa-circle-user"></i> Xin chào, @(Context.Session.GetString("HoTen") ?? "Người dùng")</span>
+                <a href="/Account/Logout" class="btn-logout"><i class="fa-solid fa-arrow-right-from-bracket"></i> Đăng xuất</a>
+            }
+            else
+            {
+                <a href="/Account/Login" class="btn-logout">Đăng nhập</a>
+                <a href="/Account/Register" class="btn-register"><i class="fa-solid fa-user-plus"></i> Đăng ký</a>
+            }
+        </div>
+    </header>
+
+    <div class="app">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <a class="brand" asp-controller="Home" asp-action="Index">
+                <span class="brand-icon"><i class="fa-solid fa-wallet"></i></span>
+                <span class="brand-text">MoneyCare</span>
+            </a>
+            <nav class="nav">
+                <a asp-controller="Home" asp-action="Index"><i class="fa-solid fa-table-columns"></i> <span>Tổng quan</span></a>
+                <a asp-controller="Home" asp-action="GiaoDich"><i class="fa-solid fa-arrow-right-arrow-left"></i> <span>Thu chi</span></a>
+                <a asp-controller="Home" asp-action="NganSach" class="active"><i class="fa-solid fa-chart-pie"></i> <span>Ngân sách</span></a>
+                <a asp-controller="Home" asp-action="TietKiem"><i class="fa-solid fa-piggy-bank"></i> <span>Tiết kiệm</span></a>
+                <a asp-controller="DanhMuc" asp-action="Index"><i class="fa-solid fa-folder-open"></i> <span>Danh mục</span></a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main">
+            <div class="page-header">
+                <div class="page-title">
+                    <div class="page-title-icon"><i class="fa-solid fa-chart-pie"></i></div>
+                    <div>
+                        <h1>Quản lý Ngân sách</h1>
+                        <p>Thiết lập hạn mức và kiểm soát chi tiêu của bạn</p>
+                    </div>
                 </div>
-                <div class="col-auto">
-                    <select name="thang" class="form-select">
+                <a asp-controller="NganSach" asp-action="Create" class="btn btn-primary">
+                    <i class="fa-solid fa-plus"></i> Thiết lập ngân sách mới
+                </a>
+            </div>
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fa-solid fa-circle-check"></i> @TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <section class="stats">
+                <div class="stat-card total">
+                    <div class="stat-icon"><i class="fa-solid fa-wallet"></i></div>
+                    <div><div class="stat-label">Tổng hạn mức</div><div class="stat-number">@tongHanMuc.ToString("N0") đ</div></div>
+                </div>
+                <div class="stat-card expense">
+                    <div class="stat-icon"><i class="fa-solid fa-arrow-down"></i></div>
+                    <div><div class="stat-label">Đã chi</div><div class="stat-number">@tongDaChi.ToString("N0") đ</div></div>
+                </div>
+                <div class="stat-card income">
+                    <div class="stat-icon"><i class="fa-solid fa-piggy-bank"></i></div>
+                    <div><div class="stat-label">Còn lại</div><div class="stat-number">@tongConLai.ToString("N0") đ</div></div>
+                </div>
+            </section>
+
+            <div class="toolbar">
+                <form method="get" asp-action="Index" class="filter-form">
+                    <label><i class="fa-regular fa-calendar"></i> Chọn tháng:</label>
+                    <select name="thang">
                         @for (int i = 1; i <= 12; i++)
                         {
                             <option value="@i" selected="@(i == currentMonth)">Tháng @i</option>
                         }
                     </select>
-                </div>
-                <div class="col-auto">
-                    <label class="col-form-label fw-bold">Năm:</label>
-                </div>
-                <div class="col-auto">
-                    <input type="number" name="nam" value="@currentYear" class="form-control" style="width: 100px;" />
-                </div>
-                <div class="col-auto">
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Xem Ngân Sách</button>
-                    <a asp-action="Create" class="btn btn-success"><i class="fas fa-plus"></i> Thiết lập ngân sách mới</a>
-                </div>
-            </form>
-        </div>
-    </div>
+                    <label>Năm:</label>
+                    <input type="number" name="nam" value="@currentYear" style="width: 90px;" />
+                    <button type="submit" class="btn btn-primary" style="padding: 8px 15px;"><i class="fa-solid fa-filter"></i> Xem</button>
+                </form>
+            </div>
 
-    <!-- Bảng danh sách ngân sách -->
-    <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-primary text-white">
-            <i class="fas fa-wallet me-1"></i> Danh sách ngân sách tháng @currentMonth/@currentYear
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover align-middle">
-                    <thead class="table-light text-center">
-                        <tr>
-                            <th>Danh Mục</th>
-                            <th>Hạn Mức</th>
-                            <th>Đã Chi</th>
-                            <th>Còn Lại</th>
-                            <th>Tiến Độ (%)</th>
-                            <th>Cảnh Báo</th>
-                            <th>Thao Tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model != null && Model.Any())
-                        {
-                            foreach (var item in Model)
+            <div class="table-wrap">
+                @if (Model == null || !Model.Any())
+                {
+                    <div class="empty">
+                        <i class="fa-regular fa-folder-open"></i>
+                        <p>Chưa có ngân sách nào được thiết lập cho tháng @currentMonth/@currentYear.</p>
+                        <a asp-controller="NganSach" asp-action="Create" class="btn btn-primary" style="margin-top: 10px;"><i class="fa-solid fa-plus"></i> Thiết lập ngay</a>
+                    </div>
+                }
+                else
+                {
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 20%">Danh Mục</th>
+                                <th class="text-end">Hạn Mức</th>
+                                <th class="text-end">Đã Chi</th>
+                                <th class="text-end">Còn Lại</th>
+                                <th style="width: 20%">Tiến Độ</th>
+                                <th class="text-center">Cảnh Báo</th>
+                                <th class="text-center">Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
                             {
                                 string progressColor = "bg-success";
                                 if (item.CanhBao == "SapVuot") progressColor = "bg-warning";
@@ -76,50 +263,61 @@
 
                                 <tr>
                                     <td class="fw-bold">@item.TenDanhMuc</td>
-                                    <td class="text-end">@item.HanMuc.ToString("N0") đ</td>
-                                    <td class="text-end text-danger">@item.DaChi.ToString("N0") đ</td>
-                                    <td class="text-end text-success">@item.ConLai.ToString("N0") đ</td>
-                                    <td style="width: 200px;">
-                                        <div class="progress" style="height: 20px;">
+                                    <td class="text-end fw-bold">@item.HanMuc.ToString("N0") đ</td>
+                                    <td class="text-end" style="color: #dc2626; font-weight:600;">@item.DaChi.ToString("N0") đ</td>
+                                    <td class="text-end" style="color: #16a34a; font-weight:600;">@item.ConLai.ToString("N0") đ</td>
+                                    <td>
+                                        <div class="progress">
                                             <div class="progress-bar @progressColor" role="progressbar" 
                                                  style="width: @(item.PhanTramDaDung > 100 ? 100 : item.PhanTramDaDung)%;" 
-                                                 aria-valuenow="@item.PhanTramDaDung" aria-valuemin="0" aria-valuemax="100">
-                                                @item.PhanTramDaDung.ToString("0.##")%
-                                            </div>
+                                                 aria-valuenow="@item.PhanTramDaDung" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                        <div style="font-size: 12px; margin-top: 4px; color: #64748b; text-align: right;">
+                                            @item.PhanTramDaDung.ToString("0.##")%
                                         </div>
                                     </td>
                                     <td class="text-center">
-                                        @if (item.CanhBao == "VuotHanMuc")
-                                        {
-                                            <span class="badge bg-danger">Vượt hạn mức!</span>
-                                        }
-                                        else if (item.CanhBao == "SapVuot")
-                                        {
-                                            <span class="badge bg-warning text-dark">Sắp vượt (>=80%)</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-success">Bình thường</span>
-                                        }
+                                        @if (item.CanhBao == "VuotHanMuc") { <span class="type-badge badge-danger">Vượt hạn mức!</span> }
+                                        else if (item.CanhBao == "SapVuot") { <span class="type-badge badge-warning">Sắp vượt</span> }
+                                        else { <span class="type-badge badge-success">Bình thường</span> }
                                     </td>
-                                    <td class="text-center">
-                                        <a asp-action="Edit" asp-route-id="@item.MaNganSach" class="btn btn-sm btn-warning" title="Sửa"><i class="fas fa-edit"></i></a>
-                                        <form asp-action="Delete" asp-route-id="@item.MaNganSach" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa ngân sách này không?');">
-                                            <button type="submit" class="btn btn-sm btn-danger" title="Xóa"><i class="fas fa-trash"></i></button>
-                                        </form>
+                                    <td>
+                                        <div class="actions">
+                                            <a asp-controller="NganSach" asp-action="Edit" asp-route-id="@item.MaNganSach" class="action-btn edit-btn" title="Sửa"><i class="fa-solid fa-pen"></i></a>
+                                            <form asp-controller="NganSach" asp-action="Delete" asp-route-id="@item.MaNganSach" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa ngân sách này không?');" style="margin:0;">
+                                                <button type="submit" class="action-btn delete-btn" title="Xóa"><i class="fa-solid fa-trash"></i></button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             }
-                        }
-                        else
-                        {
-                            <tr>
-                                <td colspan="7" class="text-center text-muted py-4">Chưa có ngân sách nào được thiết lập cho tháng này.</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </main>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="app-footer">
+        <div class="footer-left">
+            <a class="footer-brand" asp-controller="Home" asp-action="Index">
+                <i class="fa-solid fa-wallet"></i> MoneyCare
+            </a>
+            <p class="footer-desc">Quản lý thu chi thông minh, xây dựng tương lai tài chính tốt hơn.</p>
+        </div>
+        <div class="footer-right">
+            <div class="footer-links">
+                <a href="#">Trang chủ</a> |
+                <a href="#">Giới thiệu</a> |
+                <a href="#">Liên hệ</a>
+            </div>
+            <div class="footer-copy">
+                &copy; 2026 MoneyCare. All rights reserved.
             </div>
         </div>
-    </div>
-</div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -11,16 +11,19 @@ namespace MoneyCare.Controllers
 
         public IActionResult GiaoDich()
         {
-            return View();
+            // Trỏ thẳng đến file trong thư mục Views/GiaoDich
+            return View("~/Views/GiaoDich/GiaoDich.cshtml");
         }
 
         public IActionResult NganSach()
         {
-            return View();
+            // Trỏ thẳng đến file trong thư mục Views/NganSach
+            return View("~/Views/NganSach/NganSach.cshtml");
         }
 
         public IActionResult TietKiem()
         {
+            // File này bạn đã có sẵn trong Views/Home/TietKiem.cshtml
             return View();
         }
 

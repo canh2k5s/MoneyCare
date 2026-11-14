@@ -1,4 +1,3 @@
-
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -31,18 +30,18 @@ namespace MoneyCare.Controllers
             if (sessionId.HasValue)
                 return sessionId.Value;
 
-            // Không tìm thấy tài khoản
-            return null;
+            // SỬA DÒNG NÀY: Tự động trả về 1 nếu chưa đăng nhập (giống Ngân sách)
+            return 1; 
         }
 
-        // Hiển thị danh sách danh mục
         // Hiển thị danh sách danh mục, có lọc và tìm kiếm
         public async Task<IActionResult> Index(string loai = "TatCa", string? tuKhoa = null)
         {
             int? uid = LayUserId();
 
             if (uid == null)
-                return Unauthorized("Vui lòng đăng nhập để quản lý danh mục.");
+                // ĐÃ SỬA: Chuyển hướng về trang Đăng nhập thay vì hiện chữ
+                return RedirectToAction("Login", "Account");
 
             if (loai != "Thu" && loai != "Chi")
                 loai = "TatCa";
@@ -81,7 +80,8 @@ namespace MoneyCare.Controllers
                 .ThenBy(x => x.Ten)
                 .ToListAsync();
 
-            return View("~/Views/Home/DanhMuc.cshtml", danhSach);
+            // SỬA Ở ĐÂY: Chỉ định rõ tên View là "DanhMuc"
+            return View("DanhMuc", danhSach);
         }
 
         // Thêm hoặc sửa danh mục
@@ -92,7 +92,8 @@ namespace MoneyCare.Controllers
             int? uid = LayUserId();
 
             if (uid == null)
-                return Unauthorized("Vui lòng đăng nhập.");
+                // ĐÃ SỬA: Chuyển hướng về trang Đăng nhập
+                return RedirectToAction("Login", "Account");
 
             if (model.Loai != "Thu")
                 model.Loai = "Chi";
@@ -164,7 +165,8 @@ namespace MoneyCare.Controllers
             int? uid = LayUserId();
 
             if (uid == null)
-                return Unauthorized("Vui lòng đăng nhập.");
+                // ĐÃ SỬA: Chuyển hướng về trang Đăng nhập
+                return RedirectToAction("Login", "Account");
 
             // Chỉ tìm danh mục thuộc tài khoản hiện tại
             var danhMuc = await _db.DanhMuc
