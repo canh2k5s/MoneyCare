@@ -4,32 +4,21 @@ namespace MoneyCare.Controllers
 {
     public class HomeController : Controller
     {
-        public IActionResult Index()
-        {
-            return View();
-        }
+        public IActionResult Index() => View();
 
         public IActionResult GiaoDich()
         {
-            // Trỏ thẳng đến file trong thư mục Views/GiaoDich
             return View("~/Views/GiaoDich/GiaoDich.cshtml");
         }
 
         public IActionResult NganSach()
         {
-            // Trỏ thẳng đến file trong thư mục Views/NganSach
-            return View("~/Views/NganSach/NganSach.cshtml");
+            // Chuyển sang NganSachController để truy vấn dữ liệu từ SQL Server.
+            return RedirectToAction("Index", "NganSach");
         }
 
-        public IActionResult TietKiem()
-        {
-            // File này bạn đã có sẵn trong Views/Home/TietKiem.cshtml
-            return View();
-        }
+        public IActionResult TietKiem() => View();
 
-        public IActionResult Privacy()
-        {
-            return View();
-        }
+        public IActionResult Privacy() => View();
     }
 }

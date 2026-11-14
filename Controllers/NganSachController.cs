@@ -17,155 +17,284 @@ namespace MoneyCare.Controllers
 
         private int? GetCurrentUserId()
         {
-            return HttpContext.Session.GetInt32("UserId") ?? 1; 
+            return HttpContext.Session.GetInt32("UserId");
         }
 
-        // GET: NganSach
+        // GET: /NganSach hoặc /NganSach/Index
         public async Task<IActionResult> Index(byte? thang, short? nam)
         {
             int? userId = GetCurrentUserId();
-            if (userId == null) return RedirectToAction("Login", "Account");
+            if (userId == null)
+                return RedirectToAction("Login", "Account");
 
-            var currentDate = DateTime.Now;
-            byte selectedMonth = thang ?? (byte)currentDate.Month;
-            short selectedYear = nam ?? (short)currentDate.Year;
+            DateTime today = DateTime.Today;
+            byte selectedMonth = thang ?? (byte)today.Month;
+            short selectedYear = nam ?? (short)today.Year;
+
+            if (selectedMonth < 1 || selectedMonth > 12)
+                selectedMonth = (byte)today.Month;
 
             ViewBag.Thang = selectedMonth;
             ViewBag.Nam = selectedYear;
 
-            var listNganSach = await _context.VwTheoDoiNganSachs
-                .Where(x => x.UserId == userId && x.Thang == selectedMonth && x.Nam == selectedYear)
-                .ToListAsync();
+            DateTime fromDate = new DateTime(selectedYear, selectedMonth, 1);
+            DateTime toDate = fromDate.AddMonths(1);
 
-            return View(listNganSach);
+            // Lấy ngân sách và tên danh mục thuộc đúng tài khoản.
+            var budgets = await (
+                from n in _context.NganSach.AsNoTracking()
+                join d in _context.DanhMuc.AsNoTracking()
+                    on n.MaDanhMuc equals d.Id
+                where n.UserId == userId.Value
+                      && d.UserId == userId.Value
+                      && d.Loai == "Chi"
+                      && n.Thang == selectedMonth
+                      && n.Nam == selectedYear
+                orderby d.Ten
+                select new
+                {
+                    n.MaNganSach,
+                    n.UserId,
+                    n.Thang,
+                    n.Nam,
+                    n.MaDanhMuc,
+                    TenDanhMuc = d.Ten,
+                    n.HanMuc
+                }).ToListAsync();
+
+            // Chỉ cộng giao dịch thuộc danh mục chi tiêu của chính người dùng.
+            var expenseGroups = await (
+                from g in _context.GiaoDich.AsNoTracking()
+                join d in _context.DanhMuc.AsNoTracking()
+                    on g.MaDanhMuc equals d.Id
+                where g.UserId == userId.Value
+                      && d.UserId == userId.Value
+                      && d.Loai == "Chi"
+                      && g.NgayGiaoDich >= fromDate
+                      && g.NgayGiaoDich < toDate
+                group g by g.MaDanhMuc into grouped
+                select new
+                {
+                    MaDanhMuc = grouped.Key,
+                    DaChi = grouped.Sum(x => x.SoTien)
+                }).ToListAsync();
+
+            var expenseByCategory = expenseGroups.ToDictionary(
+                x => x.MaDanhMuc,
+                x => x.DaChi);
+
+            var result = budgets.Select(n =>
+            {
+                decimal spent = expenseByCategory.TryGetValue(n.MaDanhMuc, out decimal value)
+                    ? value : 0m;
+
+                decimal remaining = n.HanMuc - spent;
+                decimal percent = n.HanMuc > 0
+                    ? Math.Round(spent / n.HanMuc * 100m, 2)
+                    : 0m;
+
+                string warning = spent > n.HanMuc
+                    ? "VuotHanMuc"
+                    : percent >= 80m
+                        ? "SapVuot"
+                        : "BinhThuong";
+
+                return new NganSachTheoDoiViewModel
+                {
+                    MaNganSach = n.MaNganSach,
+                    UserId = n.UserId,
+                    Thang = n.Thang,
+                    Nam = n.Nam,
+                    MaDanhMuc = n.MaDanhMuc,
+                    TenDanhMuc = n.TenDanhMuc,
+                    HanMuc = n.HanMuc,
+                    DaChi = spent,
+                    ConLai = remaining,
+                    PhanTramDaDung = percent,
+                    CanhBao = warning
+                };
+            }).ToList();
+
+            return View("~/Views/NganSach/NganSach.cshtml", result);
         }
 
-        // GET: NganSach/Create
+        // GET: /NganSach/Create
         public async Task<IActionResult> Create()
         {
             int? userId = GetCurrentUserId();
-            if (userId == null) return RedirectToAction("Login", "Account");
+            if (userId == null)
+                return RedirectToAction("Login", "Account");
 
-            ViewBag.MaDanhMuc = new SelectList(
-                await _context.DanhMuc.Where(d => d.UserId == userId && d.Loai == "Chi").ToListAsync(), 
-                "Id", "Ten"
-            );
+            await LoadExpenseCategories(userId.Value);
 
-            var model = new NganSach
+            return View("~/Views/NganSach/Create.cshtml", new NganSach
             {
-                Thang = (byte)DateTime.Now.Month,
-                Nam = (short)DateTime.Now.Year
-            };
-            return View(model);
+                Thang = (byte)DateTime.Today.Month,
+                Nam = (short)DateTime.Today.Year
+            });
         }
 
-        // POST: NganSach/Create
+        // POST: /NganSach/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("MaDanhMuc,Thang,Nam,HanMuc")] NganSach nganSach)
+        public async Task<IActionResult> Create(
+            [Bind("MaDanhMuc,Thang,Nam,HanMuc")] NganSach model)
         {
             int? userId = GetCurrentUserId();
-            if (userId == null) return RedirectToAction("Login", "Account");
+            if (userId == null)
+                return RedirectToAction("Login", "Account");
 
-            nganSach.UserId = userId.Value;
+            model.UserId = userId.Value;
 
-            bool exists = await _context.NganSach.AnyAsync(n => 
-                n.UserId == userId && n.MaDanhMuc == nganSach.MaDanhMuc && n.Thang == nganSach.Thang && n.Nam == nganSach.Nam);
+            bool categoryValid = await _context.DanhMuc.AnyAsync(d =>
+                d.Id == model.MaDanhMuc &&
+                d.UserId == userId.Value &&
+                d.Loai == "Chi");
 
-            if (exists)
-            {
-                ModelState.AddModelError("", "Ngân sách cho danh mục này trong tháng/năm đã tồn tại.");
-            }
+            if (!categoryValid)
+                ModelState.AddModelError(nameof(model.MaDanhMuc), "Danh mục chi tiêu không hợp lệ.");
+
+            bool duplicate = await _context.NganSach.AnyAsync(n =>
+                n.UserId == userId.Value &&
+                n.MaDanhMuc == model.MaDanhMuc &&
+                n.Thang == model.Thang &&
+                n.Nam == model.Nam);
+
+            if (duplicate)
+                ModelState.AddModelError("", "Danh mục này đã có ngân sách trong tháng/năm đã chọn.");
 
             if (ModelState.IsValid)
             {
-                _context.NganSach.Add(nganSach);
+                _context.NganSach.Add(model);
                 await _context.SaveChangesAsync();
+
                 TempData["SuccessMessage"] = "Thiết lập ngân sách thành công!";
-                return RedirectToAction(nameof(Index), new { thang = nganSach.Thang, nam = nganSach.Nam });
+                return RedirectToAction(nameof(Index), new { thang = model.Thang, nam = model.Nam });
             }
 
-            ViewBag.MaDanhMuc = new SelectList(
-                await _context.DanhMuc.Where(d => d.UserId == userId && d.Loai == "Chi").ToListAsync(), 
-                "Id", "Ten", nganSach.MaDanhMuc
-            );
-            return View(nganSach);
+            await LoadExpenseCategories(userId.Value, model.MaDanhMuc);
+            return View("~/Views/NganSach/Create.cshtml", model);
         }
 
-        // GET: NganSach/Edit/5
+        // GET: /NganSach/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null) return NotFound();
+            if (id == null)
+                return NotFound();
 
             int? userId = GetCurrentUserId();
-            var nganSach = await _context.NganSach.FirstOrDefaultAsync(n => n.MaNganSach == id && n.UserId == userId);
-            
-            if (nganSach == null) return NotFound();
+            if (userId == null)
+                return RedirectToAction("Login", "Account");
 
-            ViewBag.MaDanhMuc = new SelectList(
-                await _context.DanhMuc.Where(d => d.UserId == userId && d.Loai == "Chi").ToListAsync(), 
-                "Id", "Ten", nganSach.MaDanhMuc
-            );
-            return View(nganSach);
+            var model = await _context.NganSach
+                .AsNoTracking()
+                .FirstOrDefaultAsync(n =>
+                    n.MaNganSach == id.Value && n.UserId == userId.Value);
+
+            if (model == null)
+                return NotFound();
+
+            await LoadExpenseCategories(userId.Value, model.MaDanhMuc);
+            return View("~/Views/NganSach/Edit.cshtml", model);
         }
 
-        // POST: NganSach/Edit/5
+        // POST: /NganSach/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("MaNganSach,MaDanhMuc,Thang,Nam,HanMuc")] NganSach nganSach)
+        public async Task<IActionResult> Edit(
+            int id,
+            [Bind("MaNganSach,MaDanhMuc,Thang,Nam,HanMuc")] NganSach input)
         {
-            if (id != nganSach.MaNganSach) return NotFound();
+            if (id != input.MaNganSach)
+                return NotFound();
 
             int? userId = GetCurrentUserId();
-            if (userId == null) return RedirectToAction("Login", "Account");
+            if (userId == null)
+                return RedirectToAction("Login", "Account");
 
-            nganSach.UserId = userId.Value;
+            // Lấy bản ghi theo cả mã ngân sách và UserId để không sửa được
+            // ngân sách thuộc tài khoản khác.
+            var existing = await _context.NganSach.FirstOrDefaultAsync(n =>
+                n.MaNganSach == id && n.UserId == userId.Value);
+
+            if (existing == null)
+                return NotFound();
+
+            bool categoryValid = await _context.DanhMuc.AnyAsync(d =>
+                d.Id == input.MaDanhMuc &&
+                d.UserId == userId.Value &&
+                d.Loai == "Chi");
+
+            if (!categoryValid)
+                ModelState.AddModelError(nameof(input.MaDanhMuc), "Danh mục chi tiêu không hợp lệ.");
+
+            bool duplicate = await _context.NganSach.AnyAsync(n =>
+                n.MaNganSach != id &&
+                n.UserId == userId.Value &&
+                n.MaDanhMuc == input.MaDanhMuc &&
+                n.Thang == input.Thang &&
+                n.Nam == input.Nam);
+
+            if (duplicate)
+                ModelState.AddModelError("", "Danh mục này đã có ngân sách trong tháng/năm đã chọn.");
 
             if (ModelState.IsValid)
             {
-                try
+                existing.MaDanhMuc = input.MaDanhMuc;
+                existing.Thang = input.Thang;
+                existing.Nam = input.Nam;
+                existing.HanMuc = input.HanMuc;
+
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "Cập nhật ngân sách thành công!";
+                return RedirectToAction(nameof(Index), new
                 {
-                    _context.Update(nganSach);
-                    await _context.SaveChangesAsync();
-                    TempData["SuccessMessage"] = "Cập nhật ngân sách thành công!";
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!NganSachExists(nganSach.MaNganSach)) return NotFound();
-                    else throw;
-                }
-                return RedirectToAction(nameof(Index), new { thang = nganSach.Thang, nam = nganSach.Nam });
+                    thang = existing.Thang,
+                    nam = existing.Nam
+                });
             }
+
+            await LoadExpenseCategories(userId.Value, input.MaDanhMuc);
+            return View("~/Views/NganSach/Edit.cshtml", input);
+        }
+
+        // POST: /NganSach/Delete/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id, byte? thang, short? nam)
+        {
+            int? userId = GetCurrentUserId();
+            if (userId == null)
+                return RedirectToAction("Login", "Account");
+
+            var budget = await _context.NganSach.FirstOrDefaultAsync(n =>
+                n.MaNganSach == id && n.UserId == userId.Value);
+
+            if (budget != null)
+            {
+                _context.NganSach.Remove(budget);
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Đã xóa ngân sách khỏi hệ thống.";
+            }
+
+            return RedirectToAction(nameof(Index), new
+            {
+                thang = thang ?? (byte)DateTime.Today.Month,
+                nam = nam ?? (short)DateTime.Today.Year
+            });
+        }
+
+        private async Task LoadExpenseCategories(int userId, int? selectedId = null)
+        {
+            var categories = await _context.DanhMuc
+                .AsNoTracking()
+                .Where(d => d.UserId == userId && d.Loai == "Chi")
+                .OrderBy(d => d.Ten)
+                .ToListAsync();
 
             ViewBag.MaDanhMuc = new SelectList(
-                await _context.DanhMuc.Where(d => d.UserId == userId && d.Loai == "Chi").ToListAsync(), 
-                "Id", "Ten", nganSach.MaDanhMuc
-            );
-            return View(nganSach);
-        }
-
-        // POST: NganSach/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            int? userId = GetCurrentUserId();
-            var nganSach = await _context.NganSach.FirstOrDefaultAsync(n => n.MaNganSach == id && n.UserId == userId);
-            
-            if (nganSach != null)
-            {
-                _context.NganSach.Remove(nganSach);
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Xóa ngân sách thành công!";
-            }
-
-            return RedirectToAction(nameof(Index));
-        }
-
-        private bool NganSachExists(int id)
-        {
-            int? userId = GetCurrentUserId();
-            return _context.NganSach.Any(e => e.MaNganSach == id && e.UserId == userId);
+                categories, "Id", "Ten", selectedId);
         }
     }
 }

@@ -284,7 +284,7 @@
                                     <td>
                                         <div class="actions">
                                             <a asp-controller="NganSach" asp-action="Edit" asp-route-id="@item.MaNganSach" class="action-btn edit-btn" title="Sửa"><i class="fa-solid fa-pen"></i></a>
-                                            <form asp-controller="NganSach" asp-action="Delete" asp-route-id="@item.MaNganSach" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa ngân sách này không?');" style="margin:0;">
+                                            <form asp-controller="NganSach" asp-action="Delete" asp-route-id="@item.MaNganSach" asp-route-thang="@currentMonth" asp-route-nam="@currentYear" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa ngân sách này không?');" style="margin:0;">
                                                 <button type="submit" class="action-btn delete-btn" title="Xóa"><i class="fa-solid fa-trash"></i></button>
                                             </form>
                                         </div>
