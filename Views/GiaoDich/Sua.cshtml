@@ -1,0 +1,85 @@
+@model MoneyCare.Models.SuaGiaoDichViewModel
+@{
+    ViewData["Title"] = "Sửa giao dịch";
+}
+<div class="app">
+    <aside class="sidebar">
+        <a class="brand" asp-controller="Home" asp-action="Index"><i class="bi bi-wallet2"></i> MoneyCare</a>
+        <a class="item" asp-controller="Home" asp-action="Index"><i class="bi bi-grid-1x2-fill"></i> Tổng quan</a>
+        <a class="item on" asp-controller="GiaoDich" asp-action="Index"><i class="bi bi-arrow-left-right"></i> Thu chi</a>
+        <a class="item" asp-controller="Home" asp-action="NganSach"><i class="bi bi-pie-chart-fill"></i> Ngân sách</a>
+        <a class="item" asp-controller="Home" asp-action="TietKiem"><i class="bi bi-piggy-bank-fill"></i> Tiết kiệm</a>
+        <a class="item" asp-controller="DanhMuc" asp-action="Index"><i class="bi bi-folder"></i> Danh mục</a>
+    </aside>
+    <section class="content" aria-label="Quản lý giao dịch">
+        <h1 class="page-title">Sửa giao dịch #@Model.MaGiaoDich</h1>
+        <p class="page-sub">Chỉ có thể chỉnh sửa giao dịch thuộc tài khoản của bạn.</p>
+        <div class="box" style="max-width:800px">
+            <div class="form-top" style="background:linear-gradient(90deg,#2563eb,#14b8a6)"></div>
+            <form asp-controller="GiaoDich" asp-action="Sua" asp-route-id="@Model.MaGiaoDich" method="post">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="Form.Loai" class="form-label">Loại Thu/Chi</label>
+                        <select asp-for="Form.Loai" id="suaLoai" class="form-select">
+                            <option value="Chi">Chi</option>
+                            <option value="Thu">Thu</option>
+                        </select>
+                        <span asp-validation-for="Form.Loai" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Form.MaDanhMuc" class="form-label">Danh mục</label>
+                        <select asp-for="Form.MaDanhMuc" id="suaDanhMuc" class="form-select">
+                            <option value="0">-- Chọn danh mục --</option>
+                            @foreach (var d in Model.DanhMuc)
+                            {
+                                <option value="@d.Id" data-loai="@d.Loai">@d.Ten (@d.Loai)</option>
+                            }
+                        </select>
+                        <span asp-validation-for="Form.MaDanhMuc" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Form.SoTien" class="form-label">Số tiền (VNĐ)</label>
+                        <input asp-for="Form.SoTien" type="number" step="0.01" min="0.01" class="form-control" required />
+                        <span asp-validation-for="Form.SoTien" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Form.NgayGiaoDich" class="form-label">Ngày giao dịch</label>
+                        <input asp-for="Form.NgayGiaoDich" type="date" class="form-control" required />
+                        <span asp-validation-for="Form.NgayGiaoDich" class="text-danger small"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Form.GhiChu" class="form-label">Ghi chú</label>
+                        <textarea asp-for="Form.GhiChu" maxlength="500" rows="3" class="form-control"></textarea>
+                        <span asp-validation-for="Form.GhiChu" class="text-danger small"></span>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Lưu thay đổi</button>
+                    <a class="btn btn-outline-secondary" asp-controller="GiaoDich" asp-action="Index">Hủy</a>
+                </div>
+            </form>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const loai = document.getElementById('suaLoai');
+            const dm = document.getElementById('suaDanhMuc');
+            const ds = Array.from(dm.querySelectorAll('option[data-loai]'))
+                .map(o => ({ id: o.value, ten: o.textContent, loai: o.dataset.loai }));
+            function capNhat(giuCu) {
+                const cu = giuCu ? dm.value : '0';
+                dm.replaceChildren(new Option('-- Chọn danh mục --', '0'));
+                ds.filter(x => x.loai === loai.value)
+                    .forEach(x => dm.add(new Option(x.ten, x.id)));
+                if (Array.from(dm.options).some(o => o.value === cu)) dm.value = cu;
+            }
+            loai.addEventListener('change', () => capNhat(false));
+            capNhat(true);
+        })();
+    </script>
+}
