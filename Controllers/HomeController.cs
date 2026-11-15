@@ -17,7 +17,7 @@ namespace MoneyCare.Controllers
             return RedirectToAction("Index", "NganSach");
         }
 
-        public IActionResult TietKiem() => View();
+        public IActionResult TietKiem() => RedirectToAction("Index", "TietKiem");
 
         public IActionResult Privacy() => View();
     }

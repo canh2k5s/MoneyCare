@@ -1,6 +1,10 @@
+@model TietKiemTienDoViewModel
+@using System.Globalization
 @{
     Layout = null;
     ViewData["Title"] = "Tiết kiệm";
+    var vi = CultureInfo.GetCultureInfo("vi-VN");
+    string Tien(decimal tien) => tien.ToString("#,0.##", vi) + " đ";
 }
 
 <!DOCTYPE html>
@@ -80,6 +84,18 @@
         .progress { height: 10px; background-color: #e2e8f0; border-radius: 10px; overflow: hidden; }
         .progress-bar { background-color: #10b981; border-radius: 10px; }
 
+        .goal-header > div { min-width: 0; }
+        .goal-title { overflow-wrap: anywhere; }
+        .goal-amounts { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin: 0; }
+        .goal-amounts dt { color: #475569; font-size: .8rem; }
+        .goal-amounts dd { color: #172554; font-weight: 700; margin: 0; overflow-wrap: anywhere; }
+        .goal-meter-label { color: #334155; font-size: .85rem; font-weight: 600; }
+        .goal-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .history-note { min-width: 12rem; overflow-wrap: anywhere; }
+        .money-change { white-space: nowrap; font-weight: 650; }
+        .btn-income { background: #047857; }
+        .btn-income:hover { background: #065f46; }
+
         @@media (max-width: 650px) {
             .sidebar { width: 75px; padding: 20px 9px; }
             .brand { justify-content: center; padding: 0; }
@@ -122,9 +138,9 @@
             </a>
             <nav class="nav">
                 <a asp-controller="Home" asp-action="Index"><i class="fa-solid fa-table-columns"></i> <span>Tổng quan</span></a>
-                <a asp-controller="Home" asp-action="GiaoDich"><i class="fa-solid fa-arrow-right-arrow-left"></i> <span>Thu chi</span></a>
+                <a asp-controller="GiaoDich" asp-action="Index"><i class="fa-solid fa-arrow-right-arrow-left"></i> <span>Thu chi</span></a>
                 <a asp-controller="Home" asp-action="NganSach"><i class="fa-solid fa-chart-pie"></i> <span>Ngân sách</span></a>
-                <a asp-controller="Home" asp-action="TietKiem" class="active"><i class="fa-solid fa-piggy-bank"></i> <span>Tiết kiệm</span></a>
+                <a asp-controller="TietKiem" asp-action="Index" class="active" aria-current="page"><i class="fa-solid fa-piggy-bank"></i> <span>Tiết kiệm</span></a>
                 <a asp-controller="DanhMuc" asp-action="Index"><i class="fa-solid fa-folder-open"></i> <span>Danh mục</span></a>
             </nav>
         </aside>
@@ -136,75 +152,160 @@
                     <div class="page-title-icon"><i class="fa-solid fa-piggy-bank"></i></div>
                     <div>
                         <h1>Mục tiêu tiết kiệm</h1>
-                        <p>Số dư khả dụng: <b>4.900.000đ</b>. Tiền trích vào mục tiêu được trừ khỏi số dư.</p>
+                        <p>Theo dõi số tiền đã tích lũy và lịch sử nạp, rút của từng mục tiêu.</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Tạo mục tiêu mới -->
-            <div class="box mb-4">
-                <h2 style="font-size:18px; font-weight:700; color:#1e293b; margin-bottom:20px;">
-                    <i class="fa-solid fa-bullseye text-primary"></i> Tạo mục tiêu mới
-                </h2>
-                <form method="post" action="#" class="row g-3 align-items-end">
+            @if (TempData["TietKiemSuccess"] is string thanhCong)
+            {
+                <p class="alert alert-success" role="status">@thanhCong</p>
+            }
+            @if (TempData["TietKiemError"] is string loi)
+            {
+                <p class="alert alert-danger" role="alert">@loi</p>
+            }
+
+            <section class="box mb-4" aria-labelledby="so-du-kha-dung">
+                <h2 id="so-du-kha-dung" class="h6 mb-1">Số dư khả dụng để nạp</h2>
+                <strong class="fs-4 @(Model.SoDuKhaDung < 0 ? "text-danger" : "text-primary")">@Tien(Model.SoDuKhaDung)</strong>
+                <p class="small text-muted mb-0">Tổng Thu trừ tổng Chi và số tiền đang giữ trong các mục tiêu. Nạp hoặc rút không làm thay đổi chi tiêu ngân sách.</p>
+            </section>
+
+            <section class="box mb-4" aria-labelledby="tao-muc-tieu">
+                <h2 id="tao-muc-tieu" class="h5 mb-3"><i class="fa-solid fa-bullseye text-primary" aria-hidden="true"></i> Tạo mục tiêu mới</h2>
+                <form asp-controller="TietKiem" asp-action="TaoMucTieu" method="post" class="row g-3 align-items-end">
                     <div class="col-md-5">
-                        <label class="form-label">Tên mục tiêu</label>
-                        <input type="text" class="form-control" name="TenMucTieu" maxlength="150" placeholder="Ví dụ: Mua xe máy..." required>
+                        <label for="ten-muc-tieu" class="form-label">Tên mục tiêu</label>
+                        <input id="ten-muc-tieu" type="text" class="form-control" name="TenMucTieu" maxlength="150" required />
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Số tiền cần đạt (VNĐ)</label>
-                        <input type="number" class="form-control" name="SoTienMucTieu" min="1" placeholder="Ví dụ: 20000000" required>
+                        <label for="tien-muc-tieu" class="form-label">Số tiền cần đạt (VNĐ)</label>
+                        <input id="tien-muc-tieu" type="number" class="form-control" name="SoTienMucTieu" min="0.01" step="0.01" required />
                     </div>
                     <div class="col-md-3">
-                        <button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-plus"></i> Tạo mục tiêu</button>
+                        <button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-plus" aria-hidden="true"></i> Tạo mục tiêu</button>
                     </div>
                 </form>
-            </div>
+            </section>
 
-            <!-- Danh sách mục tiêu -->
-            <div class="row g-4">
-                <div class="col-lg-6">
-                    <div class="box goal-card">
-                        <div class="goal-header">
-                            <div class="goal-icon"><i class="fa-solid fa-mobile-screen"></i></div>
-                            <div class="flex-grow-1">
-                                <h3 class="goal-title">Mua điện thoại</h3>
-                                <div class="goal-money">1.000.000đ / 10.000.000đ</div>
-                            </div>
-                            <span style="background:#dcfce7; color:#15803d; padding:6px 12px; border-radius:20px; font-size:12px; font-weight:650;">10%</span>
+            <section aria-labelledby="danh-sach-muc-tieu">
+                <h2 id="danh-sach-muc-tieu" class="h5 mb-3">Mục tiêu của bạn</h2>
+                @if (Model.MucTieu.Count == 0)
+                {
+                    <p class="box">Bạn chưa có mục tiêu tiết kiệm. Tạo mục tiêu đầu tiên bằng biểu mẫu phía trên.</p>
+                }
+                <div class="row g-3">
+                    @foreach (var mucTieu in Model.MucTieu)
+                    {
+                        bool daHuy = QuyTacTietKiem.DaHuy(mucTieu.TrangThai);
+                        bool hoanThanh = QuyTacTietKiem.TrangThaiTheoSoDu(mucTieu.SoTienHienTai, mucTieu.SoTienMucTieu) == QuyTacTietKiem.HoanThanh;
+                        decimal phanTram = QuyTacTietKiem.TinhPhanTram(mucTieu.SoTienHienTai, mucTieu.SoTienMucTieu);
+                        string doRong = phanTram.ToString("0.##", CultureInfo.InvariantCulture);
+                        string phanTramViet = phanTram.ToString("0.##", vi) + "%";
+                        string trangThai = daHuy ? "Đã hủy" : hoanThanh ? "Hoàn thành" : "Đang thực hiện";
+                        string mau = daHuy ? "text-bg-secondary" : hoanThanh ? "text-bg-success" : "text-bg-primary";
+                        <div class="col-xl-6">
+                            <article id="muc-tieu-@mucTieu.MaMucTieu" class="box goal-card h-100">
+                                <header class="goal-header">
+                                    <span class="goal-icon" aria-hidden="true"><i class="fa-solid fa-bullseye"></i></span>
+                                    <div class="flex-grow-1">
+                                        <h3 class="goal-title">@mucTieu.TenMucTieu</h3>
+                                        <span class="badge @mau mt-1">@trangThai</span>
+                                    </div>
+                                </header>
+                                <dl class="goal-amounts">
+                                    <div><dt>Hiện có</dt><dd>@Tien(mucTieu.SoTienHienTai)</dd></div>
+                                    <div><dt>Số tiền cần đạt</dt><dd>@Tien(mucTieu.SoTienMucTieu)</dd></div>
+                                    <div><dt>Còn thiếu</dt><dd>@Tien(Math.Max(0, mucTieu.SoTienMucTieu - mucTieu.SoTienHienTai))</dd></div>
+                                </dl>
+                                <div>
+                                    <div class="d-flex justify-content-between goal-meter-label mb-1"><span>Tiến độ</span><strong>@phanTramViet</strong></div>
+                                    <div class="progress" role="progressbar" aria-label="Tiến độ @mucTieu.TenMucTieu"
+                                         aria-valuenow="@doRong" aria-valuemin="0" aria-valuemax="100" aria-valuetext="@phanTramViet">
+                                        <div class="progress-bar" style="width: @(doRong)%;"></div>
+                                    </div>
+                                </div>
+
+                                @if (!daHuy)
+                                {
+                                    <form asp-controller="TietKiem" asp-action="NapRut" method="post" class="row g-2">
+                                        <input type="hidden" name="MaMucTieu" value="@mucTieu.MaMucTieu" />
+                                        <div class="col-sm-6">
+                                            <label for="so-tien-@mucTieu.MaMucTieu" class="form-label">Số tiền (VNĐ)</label>
+                                            <input id="so-tien-@mucTieu.MaMucTieu" type="number" class="form-control" name="SoTien" min="0.01" step="0.01" required />
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <label for="ghi-chu-@mucTieu.MaMucTieu" class="form-label">Ghi chú (tùy chọn)</label>
+                                            <input id="ghi-chu-@mucTieu.MaMucTieu" type="text" class="form-control" name="GhiChu" maxlength="300" />
+                                        </div>
+                                        <div class="col-12 goal-tools mt-3">
+                                            <button type="submit" name="Loai" value="Nap" class="btn btn-income">Nạp tiền</button>
+                                            <button type="submit" name="Loai" value="Rut" class="btn btn-light" disabled="@(mucTieu.SoTienHienTai <= 0)">Rút tiền</button>
+                                        </div>
+                                    </form>
+                                }
+                                <div class="goal-tools">
+                                    <a asp-controller="TietKiem" asp-action="Index" asp-route-id="@mucTieu.MaMucTieu"
+                                       asp-fragment="lich-su" class="btn btn-light">Xem lịch sử</a>
+                                </div>
+                            </article>
                         </div>
-                        <div class="progress">
-                            <div class="progress-bar" role="progressbar" style="width: 10%;" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
-                        <form method="post" action="#" class="d-flex gap-2 mt-2">
-                            <input type="number" class="form-control" name="SoTien" min="1" placeholder="Nhập số tiền..." required>
-                            <button type="submit" name="Loai" value="Nap" class="btn btn-income" style="white-space:nowrap;">Nạp</button>
-                            <button type="submit" name="Loai" value="Rut" class="btn btn-light" style="white-space:nowrap;">Rút</button>
-                        </form>
-                    </div>
+                    }
                 </div>
-                
-                <div class="col-lg-6">
-                    <div class="box goal-card">
-                        <div class="goal-header">
-                            <div class="goal-icon"><i class="fa-solid fa-shield-halved"></i></div>
-                            <div class="flex-grow-1">
-                                <h3 class="goal-title">Quỹ khẩn cấp</h3>
-                                <div class="goal-money">0đ / 5.000.000đ</div>
-                            </div>
-                            <span style="background:#f1f5f9; color:#475569; padding:6px 12px; border-radius:20px; font-size:12px; font-weight:650;">0%</span>
+            </section>
+
+            @if (Model.MucTieuLichSu is { } mucTieuLichSu)
+            {
+                <section class="box mt-4" id="lich-su" aria-labelledby="tieu-de-lich-su">
+                    <h2 id="tieu-de-lich-su" class="h5 mb-3">Lịch sử nạp và rút – @mucTieuLichSu.TenMucTieu</h2>
+                    @if (Model.LichSu.Count == 0)
+                    {
+                        <p class="mb-0 text-muted">Mục tiêu này chưa có giao dịch.</p>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table align-middle mb-0">
+                                <thead><tr>
+                                    <th scope="col">Thời gian</th>
+                                    <th scope="col">Loại</th>
+                                    <th scope="col" class="text-end">Số tiền</th>
+                                    <th scope="col">Ghi chú</th>
+                                </tr></thead>
+                                <tbody>
+                                    @foreach (var dong in Model.LichSu)
+                                    {
+                                        bool rut = dong.SoTien < 0;
+                                        <tr>
+                                            <td>@dong.NgayGiaoDich.ToString("dd/MM/yyyy HH:mm:ss", vi)</td>
+                                            <td>@(rut ? "Rút tiền" : "Nạp tiền")</td>
+                                            <td class="text-end money-change @(rut ? "text-danger" : "text-success")">
+                                                @(rut ? "−" : "+")@Tien(Math.Abs(dong.SoTien))
+                                            </td>
+                                            <td class="history-note">@(dong.GhiChu ?? "—")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
                         </div>
-                        <div class="progress">
-                            <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
-                        <form method="post" action="#" class="d-flex gap-2 mt-2">
-                            <input type="number" class="form-control" name="SoTien" min="1" placeholder="Nhập số tiền..." required>
-                            <button type="submit" name="Loai" value="Nap" class="btn btn-income" style="white-space:nowrap;">Nạp</button>
-                            <button type="submit" name="Loai" value="Rut" class="btn btn-light" style="white-space:nowrap;">Rút</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
+                        @if (Model.TongTrang > 1)
+                        {
+                            <nav class="goal-tools mt-3" aria-label="Phân trang lịch sử">
+                                @if (Model.Trang > 1)
+                                {
+                                    <a asp-action="Index" asp-route-id="@mucTieuLichSu.MaMucTieu" asp-route-trang="@(Model.Trang - 1)" asp-fragment="lich-su" class="btn btn-light">Trang trước</a>
+                                }
+                                <span>Trang @Model.Trang / @Model.TongTrang</span>
+                                @if (Model.Trang < Model.TongTrang)
+                                {
+                                    <a asp-action="Index" asp-route-id="@mucTieuLichSu.MaMucTieu" asp-route-trang="@(Model.Trang + 1)" asp-fragment="lich-su" class="btn btn-light">Trang sau</a>
+                                }
+                            </nav>
+                        }
+                    }
+                </section>
+            }
         </main>
     </div>
 
