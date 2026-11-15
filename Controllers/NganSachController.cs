@@ -21,7 +21,9 @@ namespace MoneyCare.Controllers
         }
 
         // GET: /NganSach hoặc /NganSach/Index
-        public async Task<IActionResult> Index(byte? thang, short? nam)
+        [HttpGet]
+        [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+        public async Task<IActionResult> Index(byte? thang, short? nam, CancellationToken cancellationToken)
         {
             int? userId = GetCurrentUserId();
             if (userId == null)
@@ -33,6 +35,9 @@ namespace MoneyCare.Controllers
 
             if (selectedMonth < 1 || selectedMonth > 12)
                 selectedMonth = (byte)today.Month;
+
+            if (selectedYear < 2000 || selectedYear > 2100)
+                selectedYear = (short)today.Year;
 
             ViewBag.Thang = selectedMonth;
             ViewBag.Nam = selectedYear;
@@ -60,9 +65,10 @@ namespace MoneyCare.Controllers
                     n.MaDanhMuc,
                     TenDanhMuc = d.Ten,
                     n.HanMuc
-                }).ToListAsync();
+                }).ToListAsync(cancellationToken);
 
-            // Chỉ cộng giao dịch thuộc danh mục chi tiêu của chính người dùng.
+            // Tính lại từ giao dịch đã lưu mỗi lần mở trang, không lưu trạng thái cảnh báo.
+            // Chỉ cộng giao dịch thuộc danh mục chi tiêu của chính người dùng và đúng kỳ.
             var expenseGroups = await (
                 from g in _context.GiaoDich.AsNoTracking()
                 join d in _context.DanhMuc.AsNoTracking()
@@ -77,42 +83,22 @@ namespace MoneyCare.Controllers
                 {
                     MaDanhMuc = grouped.Key,
                     DaChi = grouped.Sum(x => x.SoTien)
-                }).ToListAsync();
+                }).ToListAsync(cancellationToken);
 
             var expenseByCategory = expenseGroups.ToDictionary(
                 x => x.MaDanhMuc,
                 x => x.DaChi);
 
-            var result = budgets.Select(n =>
+            var result = budgets.Select(n => new NganSachTheoDoiViewModel
             {
-                decimal spent = expenseByCategory.TryGetValue(n.MaDanhMuc, out decimal value)
-                    ? value : 0m;
-
-                decimal remaining = n.HanMuc - spent;
-                decimal percent = n.HanMuc > 0
-                    ? Math.Round(spent / n.HanMuc * 100m, 2)
-                    : 0m;
-
-                string warning = spent > n.HanMuc
-                    ? "VuotHanMuc"
-                    : percent >= 80m
-                        ? "SapVuot"
-                        : "BinhThuong";
-
-                return new NganSachTheoDoiViewModel
-                {
-                    MaNganSach = n.MaNganSach,
-                    UserId = n.UserId,
-                    Thang = n.Thang,
-                    Nam = n.Nam,
-                    MaDanhMuc = n.MaDanhMuc,
-                    TenDanhMuc = n.TenDanhMuc,
-                    HanMuc = n.HanMuc,
-                    DaChi = spent,
-                    ConLai = remaining,
-                    PhanTramDaDung = percent,
-                    CanhBao = warning
-                };
+                MaNganSach = n.MaNganSach,
+                UserId = n.UserId,
+                Thang = n.Thang,
+                Nam = n.Nam,
+                MaDanhMuc = n.MaDanhMuc,
+                TenDanhMuc = n.TenDanhMuc,
+                HanMuc = n.HanMuc,
+                DaChi = expenseByCategory.GetValueOrDefault(n.MaDanhMuc)
             }).ToList();
 
             return View("~/Views/NganSach/NganSach.cshtml", result);
