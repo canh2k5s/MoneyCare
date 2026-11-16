@@ -1,10 +1,13 @@
-using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-
 namespace MoneyCare.Models
 {
-    [Keyless]
+    public enum MucCanhBaoNganSach
+    {
+        BinhThuong,
+        SapChamHanMuc,
+        DatHanMuc,
+        VuotHanMuc
+    }
+
     public class NganSachTheoDoiViewModel
     {
         public int MaNganSach { get; set; }
@@ -13,17 +16,18 @@ namespace MoneyCare.Models
         public short Nam { get; set; }
         public int MaDanhMuc { get; set; }
         public string TenDanhMuc { get; set; } = string.Empty;
-        
-        [Column(TypeName = "decimal(18,2)")]
         public decimal HanMuc { get; set; }
-
-        [Column(TypeName = "decimal(18,2)")]
         public decimal DaChi { get; set; }
 
-        [Column(TypeName = "decimal(18,2)")]
-        public decimal ConLai { get; set; }
+        public decimal ConLai => HanMuc - DaChi;
+        public decimal PhanTramDaDung => HanMuc > 0 ? DaChi / HanMuc * 100m : 0m;
 
-        public decimal PhanTramDaDung { get; set; }
-        public string CanhBao { get; set; } = string.Empty; // 'BinhThuong', 'SapVuot', 'VuotHanMuc'
+        // Xét bằng số tiền thực, không dựa vào phần trăm đã định dạng.
+        public MucCanhBaoNganSach CanhBao =>
+            HanMuc <= 0 ? MucCanhBaoNganSach.BinhThuong :
+            DaChi > HanMuc ? MucCanhBaoNganSach.VuotHanMuc :
+            DaChi == HanMuc ? MucCanhBaoNganSach.DatHanMuc :
+            DaChi >= HanMuc * 0.8m ? MucCanhBaoNganSach.SapChamHanMuc :
+            MucCanhBaoNganSach.BinhThuong;
     }
 }

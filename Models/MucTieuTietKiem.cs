@@ -10,7 +10,7 @@ namespace MoneyCare.Models
         [Key]
         public int MaMucTieu { get; set; }
 
-        [Required]
+        [Required, ConcurrencyCheck]
         public int UserId { get; set; }
 
         [Required(ErrorMessage = "Vui lòng nhập tên mục tiêu.")]
@@ -19,15 +19,17 @@ namespace MoneyCare.Models
 
         [Required(ErrorMessage = "Vui lòng nhập số tiền mục tiêu.")]
         [Column(TypeName = "decimal(18,2)")]
+        [ConcurrencyCheck]
         public decimal SoTienMucTieu { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]
+        [ConcurrencyCheck]
         public decimal SoTienHienTai { get; set; } = 0;
 
         [DataType(DataType.Date)]
         public DateTime? NgayKetThuc { get; set; }
 
-        [StringLength(20)]
+        [StringLength(20), ConcurrencyCheck]
         public string TrangThai { get; set; } = "DangThucHien"; // DangThucHien, HoanThanh, Huy
 
         // Navigation property

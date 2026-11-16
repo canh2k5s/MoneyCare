@@ -25,6 +25,20 @@ namespace MoneyCare.Data
                 .ToTable("DanhMuc", table =>
                     table.UseSqlOutputClause(false));
 
+            // Liên kết giao dịch với danh mục của cùng chủ tài khoản.
+            modelBuilder.Entity<GiaoDich>()
+                .HasOne(g => g.DanhMuc)
+                .WithMany()
+                .HasForeignKey(g => new { g.MaDanhMuc, g.UserId })
+                .HasPrincipalKey(d => new { d.Id, d.UserId })
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<GiaoDich>()
+                .HasOne(g => g.NguoiDung)
+                .WithMany()
+                .HasForeignKey(g => g.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             modelBuilder.Entity<NganSach>()
                 .HasIndex(n => new
                 {

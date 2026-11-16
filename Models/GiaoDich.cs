@@ -4,7 +4,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MoneyCare.Models
 {
-    [Table("GiaoDich")]
+    // Sổ Thu/Chi dùng chung cho giao dịch, ngân sách và tiết kiệm.
+    [Table("GiaoDich", Schema = "dbo")]
     public class GiaoDich
     {
         [Key]
@@ -23,7 +24,7 @@ namespace MoneyCare.Models
         [StringLength(500)]
         public string? GhiChu { get; set; }
 
-        // Thuoc tinh lien ket (navigation properties)
+        // Loại Thu/Chi được lấy từ danh mục, không lưu trùng trong giao dịch.
         public NguoiDung? NguoiDung { get; set; }
         public DanhMuc? DanhMuc { get; set; }
     }

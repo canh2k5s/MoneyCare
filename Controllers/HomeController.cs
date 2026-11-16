@@ -8,7 +8,7 @@ namespace MoneyCare.Controllers
 
         public IActionResult GiaoDich()
         {
-            return View("~/Views/GiaoDich/GiaoDich.cshtml");
+            return RedirectToAction("Index", "GiaoDich");
         }
 
         public IActionResult NganSach()
@@ -17,7 +17,7 @@ namespace MoneyCare.Controllers
             return RedirectToAction("Index", "NganSach");
         }
 
-        public IActionResult TietKiem() => View();
+        public IActionResult TietKiem() => RedirectToAction("Index", "TietKiem");
 
         public IActionResult Privacy() => View();
     }

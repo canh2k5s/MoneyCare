@@ -1,4 +1,6 @@
 @model IEnumerable<MoneyCare.Models.NganSachTheoDoiViewModel>
+@using MoneyCare.Models
+@using System.Globalization
 
 @{
     Layout = null;
@@ -6,9 +8,15 @@
     byte currentMonth = ViewBag.Thang ?? (byte)DateTime.Now.Month;
     short currentYear = ViewBag.Nam ?? (short)DateTime.Now.Year;
 
-    decimal tongHanMuc = Model != null && Model.Any() ? Model.Sum(x => x.HanMuc) : 0;
-    decimal tongDaChi = Model != null && Model.Any() ? Model.Sum(x => x.DaChi) : 0;
-    decimal tongConLai = Model != null && Model.Any() ? Model.Sum(x => x.ConLai) : 0;
+    var rows = Model?.ToList() ?? new List<NganSachTheoDoiViewModel>();
+    var vi = CultureInfo.GetCultureInfo("vi-VN");
+    string Tien(decimal amount) => amount.ToString("#,0.##", vi);
+    decimal tongHanMuc = rows.Sum(x => x.HanMuc);
+    decimal tongDaChi = rows.Sum(x => x.DaChi);
+    decimal tongConLai = tongHanMuc - tongDaChi;
+    int soVuotHanMuc = rows.Count(x => x.CanhBao == MucCanhBaoNganSach.VuotHanMuc);
+    int soDatHanMuc = rows.Count(x => x.CanhBao == MucCanhBaoNganSach.DatHanMuc);
+    int soSapCham = rows.Count(x => x.CanhBao == MucCanhBaoNganSach.SapChamHanMuc);
 }
 
 <!DOCTYPE html>
@@ -171,7 +179,7 @@
             </a>
             <nav class="nav">
                 <a asp-controller="Home" asp-action="Index"><i class="fa-solid fa-table-columns"></i> <span>Tổng quan</span></a>
-                <a asp-controller="Home" asp-action="GiaoDich"><i class="fa-solid fa-arrow-right-arrow-left"></i> <span>Thu chi</span></a>
+                <a asp-controller="GiaoDich" asp-action="Index"><i class="fa-solid fa-arrow-right-arrow-left"></i> <span>Thu chi</span></a>
                 <a asp-controller="Home" asp-action="NganSach" class="active"><i class="fa-solid fa-chart-pie"></i> <span>Ngân sách</span></a>
                 <a asp-controller="Home" asp-action="TietKiem"><i class="fa-solid fa-piggy-bank"></i> <span>Tiết kiệm</span></a>
                 <a asp-controller="DanhMuc" asp-action="Index"><i class="fa-solid fa-folder-open"></i> <span>Danh mục</span></a>
@@ -204,35 +212,50 @@
             <section class="stats">
                 <div class="stat-card total">
                     <div class="stat-icon"><i class="fa-solid fa-wallet"></i></div>
-                    <div><div class="stat-label">Tổng hạn mức</div><div class="stat-number">@tongHanMuc.ToString("N0") đ</div></div>
+                    <div><div class="stat-label">Tổng hạn mức</div><div class="stat-number">@Tien(tongHanMuc) đ</div></div>
                 </div>
                 <div class="stat-card expense">
                     <div class="stat-icon"><i class="fa-solid fa-arrow-down"></i></div>
-                    <div><div class="stat-label">Đã chi</div><div class="stat-number">@tongDaChi.ToString("N0") đ</div></div>
+                    <div><div class="stat-label">Đã chi trong các danh mục có ngân sách</div><div class="stat-number">@Tien(tongDaChi) đ</div></div>
                 </div>
                 <div class="stat-card income">
                     <div class="stat-icon"><i class="fa-solid fa-piggy-bank"></i></div>
-                    <div><div class="stat-label">Còn lại</div><div class="stat-number">@tongConLai.ToString("N0") đ</div></div>
+                    <div>
+                        <div class="stat-label">@(tongConLai < 0m ? "Vượt tổng hạn mức" : "Còn lại trên tổng hạn mức")</div>
+                        <div class="stat-number @(tongConLai < 0m ? "text-danger" : "")">@Tien(Math.Abs(tongConLai)) đ</div>
+                    </div>
                 </div>
             </section>
 
+            @if (soVuotHanMuc + soDatHanMuc + soSapCham > 0)
+            {
+                <div class="alert @(soVuotHanMuc > 0 ? "alert-danger" : "alert-warning")" role="status">
+                    <strong>Cảnh báo ngân sách tháng @currentMonth/@currentYear</strong>
+                    <ul class="mb-0 mt-1">
+                        @if (soVuotHanMuc > 0) { <li>@soVuotHanMuc danh mục vượt hạn mức.</li> }
+                        @if (soDatHanMuc > 0) { <li>@soDatHanMuc danh mục đã dùng hết hạn mức.</li> }
+                        @if (soSapCham > 0) { <li>@soSapCham danh mục đã dùng từ 80% đến dưới 100% hạn mức.</li> }
+                    </ul>
+                </div>
+            }
+
             <div class="toolbar">
                 <form method="get" asp-action="Index" class="filter-form">
-                    <label><i class="fa-regular fa-calendar"></i> Chọn tháng:</label>
-                    <select name="thang">
+                    <label for="budget-month"><i class="fa-regular fa-calendar"></i> Chọn tháng:</label>
+                    <select id="budget-month" name="thang">
                         @for (int i = 1; i <= 12; i++)
                         {
                             <option value="@i" selected="@(i == currentMonth)">Tháng @i</option>
                         }
                     </select>
-                    <label>Năm:</label>
-                    <input type="number" name="nam" value="@currentYear" style="width: 90px;" />
+                    <label for="budget-year">Năm:</label>
+                    <input id="budget-year" type="number" name="nam" min="2000" max="2100" value="@currentYear" style="width: 90px;" />
                     <button type="submit" class="btn btn-primary" style="padding: 8px 15px;"><i class="fa-solid fa-filter"></i> Xem</button>
                 </form>
             </div>
 
             <div class="table-wrap">
-                @if (Model == null || !Model.Any())
+                @if (rows.Count == 0)
                 {
                     <div class="empty">
                         <i class="fa-regular fa-folder-open"></i>
@@ -255,31 +278,46 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var item in Model)
+                            @foreach (var item in rows)
                             {
-                                string progressColor = "bg-success";
-                                if (item.CanhBao == "SapVuot") progressColor = "bg-warning";
-                                if (item.CanhBao == "VuotHanMuc") progressColor = "bg-danger";
+                                var (badgeClass, progressColor, message) = item.CanhBao switch
+                                {
+                                    MucCanhBaoNganSach.VuotHanMuc => ("badge-danger", "bg-danger", "Vượt hạn mức"),
+                                    MucCanhBaoNganSach.DatHanMuc => ("badge-warning", "bg-warning", "Đã dùng hết hạn mức"),
+                                    MucCanhBaoNganSach.SapChamHanMuc => ("badge-warning", "bg-warning", "Sắp chạm hạn mức"),
+                                    _ => ("badge-success", "bg-success", "Trong hạn mức")
+                                };
+                                decimal phanTram = item.PhanTramDaDung;
+                                decimal phanTramHienThi = Math.Floor(phanTram * 100m) / 100m;
+                                string tiLe = phanTram > 100m && phanTramHienThi == 100m
+                                    ? "> 100%" : phanTramHienThi.ToString("0.##", vi) + "%";
+                                string doRong = Math.Clamp(phanTram, 0m, 100m)
+                                    .ToString("0.##", CultureInfo.InvariantCulture);
 
                                 <tr>
                                     <td class="fw-bold">@item.TenDanhMuc</td>
-                                    <td class="text-end fw-bold">@item.HanMuc.ToString("N0") đ</td>
-                                    <td class="text-end" style="color: #dc2626; font-weight:600;">@item.DaChi.ToString("N0") đ</td>
-                                    <td class="text-end" style="color: #16a34a; font-weight:600;">@item.ConLai.ToString("N0") đ</td>
+                                    <td class="text-end fw-bold">@Tien(item.HanMuc) đ</td>
+                                    <td class="text-end fw-bold">@Tien(item.DaChi) đ</td>
+                                    <td class="text-end fw-bold @(item.ConLai < 0m ? "text-danger" : "text-success")">
+                                        @if (item.ConLai < 0m)
+                                        {
+                                            <span class="d-block small">Vượt</span>
+                                        }
+                                        @Tien(Math.Abs(item.ConLai)) đ
+                                    </td>
                                     <td>
                                         <div class="progress">
-                                            <div class="progress-bar @progressColor" role="progressbar" 
-                                                 style="width: @(item.PhanTramDaDung > 100 ? 100 : item.PhanTramDaDung)%;" 
-                                                 aria-valuenow="@item.PhanTramDaDung" aria-valuemin="0" aria-valuemax="100"></div>
+                                            <div class="progress-bar @progressColor" role="progressbar"
+                                                 style="width: @(doRong)%;"
+                                                 aria-label="Tỷ lệ đã chi cho @item.TenDanhMuc" aria-valuetext="@tiLe"
+                                                 aria-valuenow="@doRong" aria-valuemin="0" aria-valuemax="100"></div>
                                         </div>
                                         <div style="font-size: 12px; margin-top: 4px; color: #64748b; text-align: right;">
-                                            @item.PhanTramDaDung.ToString("0.##")%
+                                            @tiLe
                                         </div>
                                     </td>
                                     <td class="text-center">
-                                        @if (item.CanhBao == "VuotHanMuc") { <span class="type-badge badge-danger">Vượt hạn mức!</span> }
-                                        else if (item.CanhBao == "SapVuot") { <span class="type-badge badge-warning">Sắp vượt</span> }
-                                        else { <span class="type-badge badge-success">Bình thường</span> }
+                                        <span class="type-badge @badgeClass">@message</span>
                                     </td>
                                     <td>
                                         <div class="actions">
