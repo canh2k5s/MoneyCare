@@ -152,7 +152,7 @@
                     <div class="page-title-icon"><i class="fa-solid fa-piggy-bank"></i></div>
                     <div>
                         <h1>Mục tiêu tiết kiệm</h1>
-                        <p>Theo dõi số tiền đã tích lũy và lịch sử nạp, rút của từng mục tiêu.</p>
+                        <p>Theo dõi số tiền đã tích lũy và lịch sử tích lũy của từng mục tiêu.</p>
                     </div>
                 </div>
             </div>
@@ -167,9 +167,9 @@
             }
 
             <section class="box mb-4" aria-labelledby="so-du-kha-dung">
-                <h2 id="so-du-kha-dung" class="h6 mb-1">Số dư khả dụng để nạp</h2>
+                <h2 id="so-du-kha-dung" class="h6 mb-1">Số dư khả dụng để tích lũy</h2>
                 <strong class="fs-4 @(Model.SoDuKhaDung < 0 ? "text-danger" : "text-primary")">@Tien(Model.SoDuKhaDung)</strong>
-                <p class="small text-muted mb-0">Tổng Thu trừ tổng Chi và số tiền đang giữ trong các mục tiêu. Nạp hoặc rút không làm thay đổi chi tiêu ngân sách.</p>
+                <p class="small text-muted mb-0">Tổng Thu trừ tổng Chi và số tiền đang giữ trong các mục tiêu. Việc ghi nhận tích lũy không làm thay đổi chi tiêu ngân sách.</p>
             </section>
 
             <section class="box mb-4" aria-labelledby="tao-muc-tieu">
@@ -232,7 +232,7 @@
                                     <form asp-controller="TietKiem" asp-action="NapRut" method="post" class="row g-2">
                                         <input type="hidden" name="MaMucTieu" value="@mucTieu.MaMucTieu" />
                                         <div class="col-sm-6">
-                                            <label for="so-tien-@mucTieu.MaMucTieu" class="form-label">Số tiền (VNĐ)</label>
+                                            <label for="so-tien-@mucTieu.MaMucTieu" class="form-label">Số tiền tích lũy thêm (VNĐ)</label>
                                             <input id="so-tien-@mucTieu.MaMucTieu" type="number" class="form-control" name="SoTien" min="0.01" step="0.01" required />
                                         </div>
                                         <div class="col-sm-6">
@@ -240,8 +240,8 @@
                                             <input id="ghi-chu-@mucTieu.MaMucTieu" type="text" class="form-control" name="GhiChu" maxlength="300" />
                                         </div>
                                         <div class="col-12 goal-tools mt-3">
-                                            <button type="submit" name="Loai" value="Nap" class="btn btn-income">Nạp tiền</button>
-                                            <button type="submit" name="Loai" value="Rut" class="btn btn-light" disabled="@(mucTieu.SoTienHienTai <= 0)">Rút tiền</button>
+                                            <!-- Giữ name="Loai" value="Nap" để Controller không báo lỗi, nhưng đổi text hiển thị -->
+                                            <button type="submit" name="Loai" value="Nap" class="btn btn-income"><i class="fa-solid fa-plus"></i> Ghi nhận tích lũy</button>
                                         </div>
                                     </form>
                                 }
@@ -258,7 +258,7 @@
             @if (Model.MucTieuLichSu is { } mucTieuLichSu)
             {
                 <section class="box mt-4" id="lich-su" aria-labelledby="tieu-de-lich-su">
-                    <h2 id="tieu-de-lich-su" class="h5 mb-3">Lịch sử nạp và rút – @mucTieuLichSu.TenMucTieu</h2>
+                    <h2 id="tieu-de-lich-su" class="h5 mb-3">Lịch sử tích lũy – @mucTieuLichSu.TenMucTieu</h2>
                     @if (Model.LichSu.Count == 0)
                     {
                         <p class="mb-0 text-muted">Mục tiêu này chưa có giao dịch.</p>
@@ -269,17 +269,16 @@
                             <table class="table align-middle mb-0">
                                 <thead><tr>
                                     <th scope="col">Thời gian</th>
-                                    <th scope="col">Loại</th>
                                     <th scope="col" class="text-end">Số tiền</th>
                                     <th scope="col">Ghi chú</th>
                                 </tr></thead>
                                 <tbody>
                                     @foreach (var dong in Model.LichSu)
                                     {
+                                        // Giữ lại logic check âm/dương để phòng trường hợp có dữ liệu rút cũ trong DB
                                         bool rut = dong.SoTien < 0;
                                         <tr>
                                             <td>@dong.NgayGiaoDich.ToString("dd/MM/yyyy HH:mm:ss", vi)</td>
-                                            <td>@(rut ? "Rút tiền" : "Nạp tiền")</td>
                                             <td class="text-end money-change @(rut ? "text-danger" : "text-success")">
                                                 @(rut ? "−" : "+")@Tien(Math.Abs(dong.SoTien))
                                             </td>
